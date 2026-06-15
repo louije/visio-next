@@ -16,6 +16,7 @@ public struct VideoProvider: Identifiable, Equatable, Codable, Sendable {
     public static let defaults: [VideoProvider] = [
         VideoProvider(name: "La Suite numérique", pattern: "visio.numerique.gouv.fr"),
         VideoProvider(name: "La Suite — Webinaire", pattern: "webinaire.numerique.gouv.fr"),
+        VideoProvider(name: "La Suite — Webconf", pattern: "webconf.numerique.gouv.fr"),
         VideoProvider(name: "Zoom", pattern: "zoom.us/j/"),
         VideoProvider(name: "Google Meet", pattern: "meet.google.com"),
         VideoProvider(name: "Microsoft Teams", pattern: "teams.microsoft.com"),
@@ -23,5 +24,6 @@ public struct VideoProvider: Identifiable, Equatable, Codable, Sendable {
         VideoProvider(name: "Whereby", pattern: "whereby.com"),
         VideoProvider(name: "Jitsi", pattern: "meet.jit.si"),
         VideoProvider(name: "Webex", pattern: "webex.com"),
+        VideoProvider(name: "BigBlueButton", pattern: "bigbluebutton"),
     ]
 }

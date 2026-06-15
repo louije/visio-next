@@ -3,10 +3,12 @@ import Foundation
 public struct MeetingSnapshot: Equatable, Sendable {
     public let sections: [DaySection]
     public let isImminent: Bool
+    public let nextMeetingID: String?
 
-    public init(sections: [DaySection], isImminent: Bool) {
+    public init(sections: [DaySection], isImminent: Bool, nextMeetingID: String?) {
         self.sections = sections
         self.isImminent = isImminent
+        self.nextMeetingID = nextMeetingID
     }
 }
 
@@ -23,6 +25,6 @@ public enum MeetingLoader {
         let sections = MeetingSchedule.groupByDay(meetings, calendar: calendar)
         let next = MeetingSchedule.nextMeeting(meetings, now: now)
         let imminent = MeetingSchedule.isImminent(next, now: now, threshold: imminentThreshold)
-        return MeetingSnapshot(sections: sections, isImminent: imminent)
+        return MeetingSnapshot(sections: sections, isImminent: imminent, nextMeetingID: next?.id)
     }
 }

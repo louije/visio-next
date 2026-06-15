@@ -8,6 +8,7 @@ final class MenuBarViewModel: ObservableObject {
     @Published var sections: [DaySection] = []
     @Published var access: CalendarAccess = .notDetermined
     @Published var isImminent: Bool = false
+    @Published var nextMeetingID: String?
 
     let imminentThreshold: TimeInterval = 5 * 60
 
@@ -49,6 +50,7 @@ final class MenuBarViewModel: ObservableObject {
         guard access == .authorized else {
             sections = []
             isImminent = false
+            nextMeetingID = nil
             return
         }
         let now = Date()
@@ -62,6 +64,7 @@ final class MenuBarViewModel: ObservableObject {
                                               calendar: calendar, imminentThreshold: imminentThreshold)
         sections = snapshot.sections
         isImminent = snapshot.isImminent
+        nextMeetingID = snapshot.nextMeetingID
     }
 
     func open(_ meeting: Meeting) {

@@ -27,7 +27,7 @@ struct MenuBarView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     ForEach(vm.sections) { section in
-                        DaySectionView(section: section) { vm.open($0) }
+                        DaySectionView(section: section, nextMeetingID: vm.nextMeetingID) { vm.open($0) }
                     }
                 }
                 .padding()
@@ -63,6 +63,7 @@ struct MenuBarView: View {
 
 struct DaySectionView: View {
     let section: DaySection
+    let nextMeetingID: String?
     let onJoin: (Meeting) -> Void
 
     var body: some View {
@@ -70,7 +71,7 @@ struct DaySectionView: View {
             Text(section.date, format: .dateTime.weekday(.wide).day().month())
                 .font(.caption).foregroundStyle(.secondary)
             ForEach(section.meetings) { meeting in
-                MeetingRow(meeting: meeting, onJoin: onJoin)
+                MeetingRow(meeting: meeting, isNext: meeting.id == nextMeetingID, onJoin: onJoin)
             }
         }
     }
@@ -78,6 +79,7 @@ struct DaySectionView: View {
 
 struct MeetingRow: View {
     let meeting: Meeting
+    let isNext: Bool
     let onJoin: (Meeting) -> Void
 
     var body: some View {
@@ -86,7 +88,7 @@ struct MeetingRow: View {
                 .monospacedDigit()
                 .frame(width: 48, alignment: .leading)
             VStack(alignment: .leading, spacing: 1) {
-                Text(meeting.title).lineLimit(1)
+                Text(meeting.title).lineLimit(1).fontWeight(isNext ? .semibold : .regular)
                 if let provider = meeting.providerName {
                     Text(provider).font(.caption2).foregroundStyle(.secondary)
                 }
@@ -98,5 +100,11 @@ struct MeetingRow: View {
                     .controlSize(.small)
             }
         }
+        .padding(.vertical, isNext ? 4 : 0)
+        .padding(.horizontal, isNext ? 6 : 0)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isNext ? Color.accentColor.opacity(0.15) : .clear)
+        )
     }
 }

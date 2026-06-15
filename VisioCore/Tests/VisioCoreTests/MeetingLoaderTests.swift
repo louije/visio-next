@@ -22,4 +22,17 @@ import Foundation
     let snap = MeetingLoader.snapshot(meetings: [soon], now: now, calendar: cal, imminentThreshold: 300)
     #expect(snap.sections.count == 1)
     #expect(snap.isImminent == true)
+    #expect(snap.nextMeetingID == "soon")
+}
+
+@Test func snapshotNextMeetingIDSkipsFinishedMeetings() {
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = TimeZone(identifier: "Europe/Paris")!
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
+    let past = Meeting(id: "past", title: "Past", start: now.addingTimeInterval(-3600),
+                       end: now.addingTimeInterval(-1800), calendarName: "Pro")
+    let upcoming = Meeting(id: "upcoming", title: "Upcoming", start: now.addingTimeInterval(3600),
+                           end: now.addingTimeInterval(5400), calendarName: "Pro")
+    let snap = MeetingLoader.snapshot(meetings: [past, upcoming], now: now, calendar: cal, imminentThreshold: 300)
+    #expect(snap.nextMeetingID == "upcoming")
 }
