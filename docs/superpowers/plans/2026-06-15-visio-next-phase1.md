@@ -1412,3 +1412,31 @@ Phase 2 adds a widget extension target to `project.yml`, the real App Group
 entitlement (`group.com.meidosem.visionext`) on both targets, has the app write a
 `MeetingSnapshot` to `AppGroup.defaults`, and the widget reads it for a glanceable
 view with tap-to-join via a URL scheme.
+
+---
+
+## Post-review amendments (applied during execution)
+
+The following changes were made during implementation and accepted in review; the
+code blocks above are accurate except as noted here:
+
+1. **LinkExtractor scheme check** — lowercase the URL scheme before the http/https
+   comparison (already reflected in Task 3 above). Required for the
+   `matchingIsCaseInsensitive` test, since `NSDataDetector` preserves an uppercase
+   scheme.
+2. **`VisioCore.Settings` qualification** — in `MenuBarViewModel` (Task 9), the
+   stored property type and the two `init` references to `Settings` must be written
+   `VisioCore.Settings`; bare `Settings` is ambiguous with SwiftUI's `Settings`
+   scene type once both modules are imported. `reloadSettings()` uses the qualified
+   form too.
+3. **Settings tab reload** — each of the three `SettingsView` tabs (Task 11) gets
+   `.onAppear { settings = Settings.load(from: AppGroup.defaults) }` so cross-tab
+   edits aren't clobbered by a stale last-writer-wins save.
+4. **View-model teardown** — `MenuBarViewModel` (Task 9) stores the
+   `NotificationCenter` observer token (`private var observerToken: NSObjectProtocol?`)
+   and adds an `isolated deinit` that invalidates the timer and removes the observer.
+   (`isolated`, not `nonisolated`, so the non-Sendable stored properties are
+   reachable under Swift 6 strict concurrency.)
+5. **Generated project not committed** — `App/VisioNext.xcodeproj/` is gitignored;
+   `App/project.yml` is the source of truth. Run `xcodegen generate` in `App/` after
+   checkout. See `README.md`.
