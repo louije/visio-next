@@ -349,7 +349,10 @@ public enum LinkExtractor {
         let range = NSRange(text.startIndex..., in: text)
         return detector.matches(in: text, range: range)
             .compactMap { $0.url }
-            .filter { $0.scheme == "http" || $0.scheme == "https" }
+            .filter {
+                let scheme = $0.scheme?.lowercased()
+                return scheme == "http" || scheme == "https"
+            }
     }
 }
 ```
