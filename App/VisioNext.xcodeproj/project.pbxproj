@@ -7,15 +7,23 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		61E88ACDC443AD7DD3C40558 /* VisioNextApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4566227A30763A0D417778C /* VisioNextApp.swift */; };
+		69E5FFCF9D3F4E9B98C405A5 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB1E177C9DF05717B628981 /* MenuBarView.swift */; };
 		BD760EE1EF25904E3C76CB07 /* VisioCore in Frameworks */ = {isa = PBXBuildFile; productRef = 898AEDD39EBE3879B89AAF76 /* VisioCore */; };
 		C4AC095F68477A92CDBD14DD /* AppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDC11B774B6BFD927F6D98E2 /* AppGroup.swift */; };
 		CB4984A830D7E8DF2738062F /* LinkOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 553FF0F0DF046F85B87D23BE /* LinkOpener.swift */; };
+		E0E77D0103A4C02B87CD2FD4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4BF4BFAD5935ECF71DEAEC7 /* SettingsView.swift */; };
+		E9B144EA1AD56B95C1DA17AA /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B83315D76836ECEC20165D5 /* MenuBarViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0EB1E177C9DF05717B628981 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		109D9139A3992F7027CC3A38 /* VisioCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = VisioCore; path = ../VisioCore; sourceTree = SOURCE_ROOT; };
 		553FF0F0DF046F85B87D23BE /* LinkOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkOpener.swift; sourceTree = "<group>"; };
+		6B83315D76836ECEC20165D5 /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
 		8D73CAA7B9870F67990B5442 /* VisioNext.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VisioNext.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A4BF4BFAD5935ECF71DEAEC7 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F4566227A30763A0D417778C /* VisioNextApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisioNextApp.swift; sourceTree = "<group>"; };
 		FDC11B774B6BFD927F6D98E2 /* AppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroup.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -44,6 +52,10 @@
 			children = (
 				FDC11B774B6BFD927F6D98E2 /* AppGroup.swift */,
 				553FF0F0DF046F85B87D23BE /* LinkOpener.swift */,
+				0EB1E177C9DF05717B628981 /* MenuBarView.swift */,
+				6B83315D76836ECEC20165D5 /* MenuBarViewModel.swift */,
+				A4BF4BFAD5935ECF71DEAEC7 /* SettingsView.swift */,
+				F4566227A30763A0D417778C /* VisioNextApp.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -130,6 +142,10 @@
 			files = (
 				C4AC095F68477A92CDBD14DD /* AppGroup.swift in Sources */,
 				CB4984A830D7E8DF2738062F /* LinkOpener.swift in Sources */,
+				69E5FFCF9D3F4E9B98C405A5 /* MenuBarView.swift in Sources */,
+				E9B144EA1AD56B95C1DA17AA /* MenuBarViewModel.swift in Sources */,
+				E0E77D0103A4C02B87CD2FD4 /* SettingsView.swift in Sources */,
+				61E88ACDC443AD7DD3C40558 /* VisioNextApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

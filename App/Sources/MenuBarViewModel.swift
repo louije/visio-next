@@ -12,11 +12,11 @@ final class MenuBarViewModel: ObservableObject {
     let imminentThreshold: TimeInterval = 5 * 60
 
     private let service: EventProviding
-    private var settings: Settings
+    private var settings: VisioCore.Settings
     private var timer: Timer?
 
     init(service: EventProviding = EventKitCalendarService(),
-         settings: Settings = Settings.load(from: AppGroup.defaults)) {
+         settings: VisioCore.Settings = VisioCore.Settings.load(from: AppGroup.defaults)) {
         self.service = service
         self.settings = settings
         self.access = service.access()
