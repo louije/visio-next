@@ -45,6 +45,7 @@ private struct CalendarsSettings: View {
             }
         }
         .padding()
+        .onAppear { settings = Settings.load(from: AppGroup.defaults) }
     }
 
     private func binding(for id: String) -> Binding<Bool> {
@@ -106,6 +107,7 @@ private struct ProvidersSettings: View {
             }
         }
         .padding()
+        .onAppear { settings = Settings.load(from: AppGroup.defaults) }
     }
 
     private func persist() {
@@ -136,6 +138,7 @@ private struct GeneralSettings: View {
                                  set: { settings.allowAnyURLFallback = $0; persist() }))
         }
         .padding()
+        .onAppear { settings = Settings.load(from: AppGroup.defaults) }
     }
 
     private func persist() {

@@ -14,6 +14,7 @@ final class MenuBarViewModel: ObservableObject {
     private let service: EventProviding
     private var settings: VisioCore.Settings
     private var timer: Timer?
+    private var observerToken: NSObjectProtocol?
 
     init(service: EventProviding = EventKitCalendarService(),
          settings: VisioCore.Settings = VisioCore.Settings.load(from: AppGroup.defaults)) {
@@ -21,6 +22,13 @@ final class MenuBarViewModel: ObservableObject {
         self.settings = settings
         self.access = service.access()
         Task { await bootstrap() }
+    }
+
+    isolated deinit {
+        timer?.invalidate()
+        if let observerToken {
+            NotificationCenter.default.removeObserver(observerToken)
+        }
     }
 
     private func bootstrap() async {
@@ -33,7 +41,7 @@ final class MenuBarViewModel: ObservableObject {
     }
 
     func reloadSettings() {
-        settings = Settings.load(from: AppGroup.defaults)
+        settings = VisioCore.Settings.load(from: AppGroup.defaults)
         Task { await refresh() }
     }
 
@@ -66,8 +74,8 @@ final class MenuBarViewModel: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.refresh() }
         }
-        NotificationCenter.default.addObserver(forName: .EKEventStoreChanged,
-                                               object: nil, queue: .main) { [weak self] _ in
+        observerToken = NotificationCenter.default.addObserver(forName: .EKEventStoreChanged,
+                                                               object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in await self?.refresh() }
         }
     }
