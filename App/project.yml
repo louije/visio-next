@@ -13,6 +13,7 @@ targets:
     platform: macOS
     sources:
       - Sources
+      - Resources
     dependencies:
       - package: VisioCore
     info:
