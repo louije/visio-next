@@ -4,18 +4,15 @@ public struct Settings: Codable, Equatable, Sendable {
     public var selectedCalendarIDs: Set<String>
     public var providers: [VideoProvider]
     public var openInBundleID: String?
-    public var lookAheadDays: Int
     public var allowAnyURLFallback: Bool
 
     public init(selectedCalendarIDs: Set<String> = [],
                 providers: [VideoProvider] = VideoProvider.defaults,
                 openInBundleID: String? = nil,
-                lookAheadDays: Int = 3,
                 allowAnyURLFallback: Bool = false) {
         self.selectedCalendarIDs = selectedCalendarIDs
         self.providers = providers
         self.openInBundleID = openInBundleID
-        self.lookAheadDays = lookAheadDays
         self.allowAnyURLFallback = allowAnyURLFallback
     }
 }

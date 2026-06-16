@@ -2,37 +2,37 @@ import Testing
 import Foundation
 @testable import VisioCore
 
-@Test func windowStartsNowAndSpansLookAheadDays() {
-    var cal = Calendar(identifier: .gregorian)
-    cal.timeZone = TimeZone(identifier: "Europe/Paris")!
-    let now = Date(timeIntervalSince1970: 1_700_000_000)
-    let window = MeetingLoader.window(now: now, lookAheadDays: 2, calendar: cal)
-    #expect(window.start == now)
-    let expectedEnd = cal.date(byAdding: .day, value: 2, to: cal.startOfDay(for: now))!
-    #expect(window.end == expectedEnd)
+private func meeting(_ id: String, startOffset: TimeInterval, now: Date, link: Bool) -> Meeting {
+    Meeting(id: id, title: id, start: now.addingTimeInterval(startOffset),
+            end: now.addingTimeInterval(startOffset + 1800), calendarName: "Pro",
+            joinURL: link ? URL(string: "https://zoom.us/j/\(id)") : nil,
+            providerName: link ? "Zoom" : nil)
 }
 
-@Test func snapshotBuildsSectionsAndImminentFlag() {
-    var cal = Calendar(identifier: .gregorian)
-    cal.timeZone = TimeZone(identifier: "Europe/Paris")!
+@Test func fetchWindowSpansThirtyMinutesEachSide() {
     let now = Date(timeIntervalSince1970: 1_700_000_000)
-    let soon = Meeting(id: "soon", title: "Soon", start: now.addingTimeInterval(120),
-                       end: now.addingTimeInterval(1800), calendarName: "Pro",
-                       joinURL: URL(string: "https://zoom.us/j/1"), providerName: "Zoom")
-    let snap = MeetingLoader.snapshot(meetings: [soon], now: now, calendar: cal, imminentThreshold: 300)
-    #expect(snap.sections.count == 1)
+    let window = MeetingLoader.fetchWindow(now: now)
+    #expect(window.start == now.addingTimeInterval(-1800))
+    #expect(window.end == now.addingTimeInterval(1800))
+}
+
+@Test func snapshotKeepsOnlyLinkedMeetingsWithinWindowSortedByStart() {
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
+    let soon = meeting("soon", startOffset: 600, now: now, link: true)       // +10m, link
+    let ongoing = meeting("ongoing", startOffset: -600, now: now, link: true) // -10m, link
+    let noLink = meeting("nolink", startOffset: 300, now: now, link: false)   // in window, no link
+    let tooFar = meeting("far", startOffset: 3600, now: now, link: true)      // +60m, link
+    let tooOld = meeting("old", startOffset: -3600, now: now, link: true)     // -60m, link
+
+    let snap = MeetingLoader.snapshot(meetings: [tooFar, soon, noLink, tooOld, ongoing],
+                                      now: now, imminentThreshold: 300)
+    #expect(snap.joinable.map(\.id) == ["ongoing", "soon"])
+}
+
+@Test func snapshotImminentWhenLinkedMeetingWithinThreshold() {
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
+    let soon = meeting("soon", startOffset: 120, now: now, link: true)        // +2m
+    let snap = MeetingLoader.snapshot(meetings: [soon], now: now, imminentThreshold: 300)
+    #expect(snap.joinable.count == 1)
     #expect(snap.isImminent == true)
-    #expect(snap.nextMeetingID == "soon")
-}
-
-@Test func snapshotNextMeetingIDSkipsFinishedMeetings() {
-    var cal = Calendar(identifier: .gregorian)
-    cal.timeZone = TimeZone(identifier: "Europe/Paris")!
-    let now = Date(timeIntervalSince1970: 1_700_000_000)
-    let past = Meeting(id: "past", title: "Past", start: now.addingTimeInterval(-3600),
-                       end: now.addingTimeInterval(-1800), calendarName: "Pro")
-    let upcoming = Meeting(id: "upcoming", title: "Upcoming", start: now.addingTimeInterval(3600),
-                           end: now.addingTimeInterval(5400), calendarName: "Pro")
-    let snap = MeetingLoader.snapshot(meetings: [past, upcoming], now: now, calendar: cal, imminentThreshold: 300)
-    #expect(snap.nextMeetingID == "upcoming")
 }

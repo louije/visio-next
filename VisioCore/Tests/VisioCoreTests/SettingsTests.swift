@@ -14,7 +14,6 @@ private func freshDefaults() -> UserDefaults {
     #expect(s.selectedCalendarIDs.isEmpty)            // empty = all calendars
     #expect(s.providers == VideoProvider.defaults)
     #expect(s.openInBundleID == nil)
-    #expect(s.lookAheadDays == 3)
     #expect(s.allowAnyURLFallback == false)
 }
 
@@ -28,7 +27,6 @@ private func freshDefaults() -> UserDefaults {
     var s = Settings()
     s.selectedCalendarIDs = ["cal-1", "cal-2"]
     s.openInBundleID = "com.google.Chrome"
-    s.lookAheadDays = 7
     s.allowAnyURLFallback = true
     s.providers.append(VideoProvider(name: "Custom", pattern: "vc.example.org"))
     s.save(to: d)
