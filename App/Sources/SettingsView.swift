@@ -11,10 +11,14 @@ struct SettingsView: View {
             ProvidersSettings(onChange: onChange)
                 .tabItem { Label("Services visio", systemImage: "video") }
             GeneralSettings(onChange: onChange)
-                .tabItem { Label("Général", systemImage: "gearshape") }
+                .tabItem { Label("Liens & affichage", systemImage: "slider.horizontal.3") }
         }
         .frame(width: 480, height: 400)
     }
+}
+
+#Preview {
+    SettingsView(onChange: {})
 }
 
 // MARK: - Calendars
@@ -120,25 +124,34 @@ private struct ProvidersSettings: View {
 
 private struct GeneralSettings: View {
     var onChange: () -> Void
-    @State private var settings = Settings.load(from: AppGroup.defaults)
+    @State private var settings = VisioCore.Settings.load(from: AppGroup.defaults)
+    private let browsers = LinkOpener.installedBrowsers()
 
     var body: some View {
         Form {
-            TextField("Bundle ID de l’app pour ouvrir les liens (vide = navigateur par défaut)",
-                      text: Binding(
-                        get: { settings.openInBundleID ?? "" },
-                        set: { settings.openInBundleID = $0.isEmpty ? nil : $0; persist() }
-                      ))
-            Stepper("Jours affichés à l’avance : \(settings.lookAheadDays)",
-                    value: Binding(get: { settings.lookAheadDays },
-                                   set: { settings.lookAheadDays = $0; persist() }),
-                    in: 1...30)
-            Toggle("Repli : prendre n’importe quel lien si aucun service ne correspond",
-                   isOn: Binding(get: { settings.allowAnyURLFallback },
-                                 set: { settings.allowAnyURLFallback = $0; persist() }))
+            Picker("Ouvrir les liens dans", selection: Binding(
+                get: { settings.openInBundleID },
+                set: { settings.openInBundleID = $0; persist() }
+            )) {
+                Text("Navigateur par défaut").tag(String?.none)
+                if !browsers.isEmpty { Divider() }
+                ForEach(browsers) { browser in
+                    Text(browser.name).tag(String?.some(browser.bundleID))
+                }
+            }
+
+            Toggle(isOn: Binding(
+                get: { settings.allowAnyURLFallback },
+                set: { settings.allowAnyURLFallback = $0; persist() }
+            )) {
+                Text("Repli sur n’importe quel lien")
+                Text("Si aucun service visio ne correspond, ouvrir le premier lien trouvé.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
-        .padding()
-        .onAppear { settings = Settings.load(from: AppGroup.defaults) }
+        .formStyle(.grouped)
+        .onAppear { settings = VisioCore.Settings.load(from: AppGroup.defaults) }
     }
 
     private func persist() {
