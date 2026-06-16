@@ -4,6 +4,7 @@ import VisioCore
 
 struct MenuBarView: View {
     @ObservedObject var vm: MenuBarViewModel
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -18,27 +19,29 @@ struct MenuBarView: View {
     @ViewBuilder private var content: some View {
         if vm.access == .denied {
             accessDenied
-        } else if vm.sections.isEmpty {
-            Text("Aucune réunion à venir")
+        } else if vm.meetings.isEmpty {
+            Text("Aucune réunion à rejoindre")
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding()
         } else {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    ForEach(vm.sections) { section in
-                        DaySectionView(section: section, nextMeetingID: vm.nextMeetingID) { vm.open($0) }
-                    }
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(vm.meetings) { meeting in
+                    MeetingRow(meeting: meeting) { vm.open($0) }
                 }
-                .padding()
             }
-            .frame(maxHeight: 360)
+            .padding(8)
         }
     }
 
     private var footer: some View {
         HStack {
-            SettingsLink { Text("Réglages…") }
+            // SettingsLink doesn't surface the window in an LSUIElement (accessory) app
+            // because the app isn't active. Activate first, then open Settings.
+            Button("Réglages…") {
+                NSApp.activate(ignoringOtherApps: true)
+                openSettings()
+            }
             Spacer()
             Button("Quitter") { NSApplication.shared.terminate(nil) }
         }
@@ -61,50 +64,44 @@ struct MenuBarView: View {
     }
 }
 
-struct DaySectionView: View {
-    let section: DaySection
-    let nextMeetingID: String?
+struct MeetingRow: View {
+    let meeting: Meeting
     let onJoin: (Meeting) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(section.date, format: .dateTime.weekday(.wide).day().month())
-                .font(.caption).foregroundStyle(.secondary)
-            ForEach(section.meetings) { meeting in
-                MeetingRow(meeting: meeting, isNext: meeting.id == nextMeetingID, onJoin: onJoin)
+        HStack(spacing: 10) {
+            ServiceIcon(providerName: meeting.providerName, hasLink: true)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(meeting.title)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(meeting.start, format: .dateTime.hour().minute())
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
             }
+            Button("Rejoindre") { onJoin(meeting) }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
         }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 6)
     }
 }
 
-struct MeetingRow: View {
-    let meeting: Meeting
-    let isNext: Bool
-    let onJoin: (Meeting) -> Void
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Text(meeting.start, format: .dateTime.hour().minute())
-                .monospacedDigit()
-                .frame(width: 48, alignment: .leading)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(meeting.title).lineLimit(1).fontWeight(isNext ? .semibold : .regular)
-                if let provider = meeting.providerName {
-                    Text(provider).font(.caption2).foregroundStyle(.secondary)
-                }
-            }
-            Spacer()
-            if meeting.joinURL != nil {
-                Button("Rejoindre") { onJoin(meeting) }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-            }
-        }
-        .padding(.vertical, isNext ? 4 : 0)
-        .padding(.horizontal, isNext ? 6 : 0)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(isNext ? Color.accentColor.opacity(0.15) : .clear)
-        )
+#Preview("Meeting rows") {
+    let now = Date()
+    let a = Meeting(id: "1", title: "Comité de suivi interministériel sur le numérique", start: now,
+                    end: now.addingTimeInterval(1800), calendarName: "Pro",
+                    joinURL: URL(string: "https://visio.numerique.gouv.fr/abc-def"),
+                    providerName: "La Suite numérique")
+    let b = Meeting(id: "2", title: "Sync produit", start: now.addingTimeInterval(900),
+                    end: now.addingTimeInterval(2700), calendarName: "Pro",
+                    joinURL: URL(string: "https://zoom.us/j/123"), providerName: "Zoom")
+    return VStack(alignment: .leading, spacing: 4) {
+        MeetingRow(meeting: a) { _ in }
+        MeetingRow(meeting: b) { _ in }
     }
+    .padding(8)
+    .frame(width: 320)
 }

@@ -5,10 +5,9 @@ import VisioCore
 
 @MainActor
 final class MenuBarViewModel: ObservableObject {
-    @Published var sections: [DaySection] = []
+    @Published var meetings: [Meeting] = []
     @Published var access: CalendarAccess = .notDetermined
     @Published var isImminent: Bool = false
-    @Published var nextMeetingID: String?
 
     let imminentThreshold: TimeInterval = 5 * 60
 
@@ -48,23 +47,20 @@ final class MenuBarViewModel: ObservableObject {
 
     func refresh() async {
         guard access == .authorized else {
-            sections = []
+            meetings = []
             isImminent = false
-            nextMeetingID = nil
             return
         }
         let now = Date()
-        let calendar = Calendar.current
-        let window = MeetingLoader.window(now: now, lookAheadDays: settings.lookAheadDays, calendar: calendar)
-        let meetings = await service.meetings(in: window,
-                                              selectedCalendarIDs: settings.selectedCalendarIDs,
-                                              providers: settings.providers,
-                                              allowAnyURLFallback: settings.allowAnyURLFallback)
-        let snapshot = MeetingLoader.snapshot(meetings: meetings, now: now,
-                                              calendar: calendar, imminentThreshold: imminentThreshold)
-        sections = snapshot.sections
+        let window = MeetingLoader.fetchWindow(now: now)
+        let fetched = await service.meetings(in: window,
+                                             selectedCalendarIDs: settings.selectedCalendarIDs,
+                                             providers: settings.providers,
+                                             allowAnyURLFallback: settings.allowAnyURLFallback)
+        let snapshot = MeetingLoader.snapshot(meetings: fetched, now: now,
+                                              imminentThreshold: imminentThreshold)
+        meetings = snapshot.joinable
         isImminent = snapshot.isImminent
-        nextMeetingID = snapshot.nextMeetingID
     }
 
     func open(_ meeting: Meeting) {
