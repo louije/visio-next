@@ -45,9 +45,9 @@ struct MenuBarView: View {
                 .opacity(vm.linkCopied ? 0 : 1)
                 .disabled(vm.linkCopied)
 
-                if vm.linkCopied {
-                    Text("Nouveau lien copié").font(.body)
-                }
+                Text("Nouveau lien copié")
+                    .font(.body)
+                    .opacity(vm.linkCopied ? 1 : 0)
             }
             Spacer()
             Button {

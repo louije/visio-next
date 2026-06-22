@@ -78,12 +78,12 @@ final class MenuBarViewModel: ObservableObject {
         pasteboard.clearContents()
         pasteboard.setString(link, forType: .string)
 
-        linkCopied = true
+        linkCopied = true   // jump cut to the caption (no animation)
         confirmationTask?.cancel()
         confirmationTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(2))
             guard !Task.isCancelled else { return }
-            self?.linkCopied = false
+            withAnimation { self?.linkCopied = false }   // animate the button back
         }
     }
 
