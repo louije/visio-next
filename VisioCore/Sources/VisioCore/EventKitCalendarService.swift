@@ -7,6 +7,12 @@ public final class EventKitCalendarService: EventProviding {
 
     public init() {}
 
+    /// SwiftUI previews run as an ad-hoc-signed helper, so any EventKit access re-prompts
+    /// for calendar permission on every rebuild. Skip all EventKit work under previews.
+    private var isPreview: Bool {
+        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    }
+
     public func access() -> CalendarAccess {
         switch EKEventStore.authorizationStatus(for: .event) {
         case .fullAccess: return .authorized
@@ -17,11 +23,13 @@ public final class EventKitCalendarService: EventProviding {
     }
 
     public func requestAccess() async -> Bool {
-        (try? await store.requestFullAccessToEvents()) ?? false
+        guard !isPreview else { return false }
+        return (try? await store.requestFullAccessToEvents()) ?? false
     }
 
     public func calendars() -> [CalendarNode] {
-        store.calendars(for: .event)
+        guard !isPreview else { return [] }
+        return store.calendars(for: .event)
             .map { CalendarNode(id: $0.calendarIdentifier, title: $0.title, sourceTitle: $0.source.title) }
             .sorted { ($0.sourceTitle, $0.title) < ($1.sourceTitle, $1.title) }
     }
@@ -30,6 +38,7 @@ public final class EventKitCalendarService: EventProviding {
                          selectedCalendarIDs: Set<String>,
                          providers: [VideoProvider],
                          allowAnyURLFallback: Bool) async -> [Meeting] {
+        guard !isPreview else { return [] }
         let all = store.calendars(for: .event)
         let chosen = selectedCalendarIDs.isEmpty
             ? all
