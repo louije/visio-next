@@ -132,8 +132,7 @@ private struct PreviewEventService: EventProviding {
     func calendars() -> [CalendarNode] { [] }
     func meetings(in window: DateInterval,
                   selectedCalendarIDs: Set<String>,
-                  providers: [VideoProvider],
-                  allowAnyURLFallback: Bool) async -> [Meeting] {
+                  providers: [VideoProvider]) async -> [Meeting] {
         let now = Date()
         return [
             Meeting(id: "1", title: "Comité de suivi interministériel",

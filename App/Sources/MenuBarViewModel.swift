@@ -58,8 +58,7 @@ final class MenuBarViewModel: ObservableObject {
         let window = MeetingLoader.fetchWindow(now: now)
         let fetched = await service.meetings(in: window,
                                              selectedCalendarIDs: settings.selectedCalendarIDs,
-                                             providers: settings.providers,
-                                             allowAnyURLFallback: settings.allowAnyURLFallback)
+                                             providers: settings.providers)
         let snapshot = MeetingLoader.snapshot(meetings: fetched, now: now,
                                               imminentThreshold: imminentThreshold)
         meetings = snapshot.joinable
