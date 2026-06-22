@@ -112,3 +112,33 @@ struct MeetingRow: View {
     .padding(8)
     .frame(width: 320)
 }
+
+#Preview("Menu bar popover") {
+    MenuBarView(vm: MenuBarViewModel(service: PreviewEventService()))
+}
+
+/// A canned `EventProviding` so the full `MenuBarView` renders in the canvas without
+/// touching EventKit. Returns a couple of joinable meetings near "now".
+@MainActor
+private struct PreviewEventService: EventProviding {
+    func access() -> CalendarAccess { .authorized }
+    func requestAccess() async -> Bool { true }
+    func calendars() -> [CalendarNode] { [] }
+    func meetings(in window: DateInterval,
+                  selectedCalendarIDs: Set<String>,
+                  providers: [VideoProvider],
+                  allowAnyURLFallback: Bool) async -> [Meeting] {
+        let now = Date()
+        return [
+            Meeting(id: "1", title: "Comité de suivi interministériel",
+                    start: now.addingTimeInterval(300), end: now.addingTimeInterval(2100),
+                    calendarName: "Pro",
+                    joinURL: URL(string: "https://visio.numerique.gouv.fr/pdi-azer-ljt"),
+                    providerName: "La Suite numérique"),
+            Meeting(id: "2", title: "Sync produit",
+                    start: now.addingTimeInterval(600), end: now.addingTimeInterval(2400),
+                    calendarName: "Pro",
+                    joinURL: URL(string: "https://zoom.us/j/123456"), providerName: "Zoom"),
+        ]
+    }
+}
