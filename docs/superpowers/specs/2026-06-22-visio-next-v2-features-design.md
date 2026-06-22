@@ -120,15 +120,30 @@ Binaries: GitHub Release assets. Appcast: `appcast.xml` served from GitHub Pages
 ### Shared data
 - Enable the **real App Group** (`group.com.meidosem.visionext`) on both the app and
   the widget (entitlements via XcodeGen).
-- On every refresh, the app writes a small render **snapshot** (the upcoming call[s]
-  plus the current `linkTemplate`) to the App Group store, so the widget renders
-  without querying EventKit itself.
+- On every refresh, the app writes a small render **snapshot** to the App Group store,
+  so the widget renders without querying EventKit itself. The snapshot holds the
+  **next call(s)** and the current `linkTemplate`. Because the widget always shows the
+  next call no matter how far off, the app queries a **broad horizon** (e.g. the next
+  ~30 days) for this snapshot — separate from the menu popover's ±30-minute window.
+
+### "Next call(s)" selection
+The widget is always visible, so it always shows the **next upcoming call with a link**,
+however far away (today, tomorrow, next week). It shows **one** call by default, and a
+**second only if that second call starts within ~10 minutes** of the first (capped at
+two). This selection is a pure function in VisioCore.
+
+### Visual state: imminent vs. far
+- **Imminent** (start within the join window): rendered **active** — full color, with a
+  Rejoindre control (`JoinCallIntent`).
+- **Far** (beyond the join window): rendered **dulled/muted** to signal it isn't
+  actionable yet, with a **relative-time subhead** (e.g. "demain 14:00", "lun. 9:00",
+  "dans 3 j") and no active join control.
 
 ### Widget configs (one extension target)
 - **Small — "Nouveau lien":** a button running `NewCallIntent` (generate + copy a
   link from the shared template).
-- **Small — "Prochain appel":** the next upcoming call, plus any others starting
-  within a **10-minute span** of it; each with a Rejoindre control (`JoinCallIntent`).
+- **Small — "Prochain appel":** the next call(s) per the selection + visual-state rules
+  above.
 - **Medium:** the two combined (next call[s] + a new-call button).
 
 ### App Intents
@@ -136,14 +151,10 @@ Binaries: GitHub Release assets. Appcast: `appcast.xml` served from GitHub Pages
   it to the pasteboard, returns a confirmation; refreshes the timeline.
 - `JoinCallIntent(url:)` — opens the call URL.
 
-### Scope note
-The widget's "next call(s)" looks at upcoming calls over the next ~24 h (grouped by a
-10-minute span), which is intentionally broader than the menu popover's ±30-minute
-"join now" window.
-
 ### Testing
-The 10-minute grouping and "next call(s)" selection are pure functions in VisioCore,
-unit-tested. Intents and timeline provider are integration-verified by building and
+The "next call(s)" selection (soonest upcoming call + a second only if within ~10 min,
+capped at two) and the imminent-vs-far classification are pure functions in VisioCore,
+unit-tested. Intents and the timeline provider are integration-verified by building and
 running.
 
 ---
