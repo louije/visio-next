@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import EventKit
+import AppKit
 import VisioCore
 
 @MainActor
@@ -8,6 +9,7 @@ final class MenuBarViewModel: ObservableObject {
     @Published var meetings: [Meeting] = []
     @Published var access: CalendarAccess = .notDetermined
     @Published var isImminent: Bool = false
+    @Published var linkCopied = false
 
     let imminentThreshold: TimeInterval = 5 * 60
 
@@ -15,6 +17,7 @@ final class MenuBarViewModel: ObservableObject {
     private var settings: VisioCore.Settings
     private var timer: Timer?
     private var observerToken: NSObjectProtocol?
+    private var confirmationTask: Task<Void, Never>?
 
     init(service: EventProviding = EventKitCalendarService(),
          settings: VisioCore.Settings = VisioCore.Settings.load(from: AppGroup.defaults)) {
@@ -66,6 +69,22 @@ final class MenuBarViewModel: ObservableObject {
     func open(_ meeting: Meeting) {
         guard let url = meeting.joinURL else { return }
         LinkOpener.open(url, bundleID: settings.openInBundleID)
+    }
+
+    func createLink() {
+        var rng = SystemRandomNumberGenerator()
+        let link = LinkGenerator.generate(from: settings.linkTemplate, using: &rng)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(link, forType: .string)
+
+        linkCopied = true
+        confirmationTask?.cancel()
+        confirmationTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            self?.linkCopied = false
+        }
     }
 
     private func startAutoRefresh() {

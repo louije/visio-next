@@ -35,18 +35,25 @@ struct MenuBarView: View {
     }
 
     private var footer: some View {
-        HStack {
-            // SettingsLink doesn't surface the window in an LSUIElement (accessory) app
-            // because the app isn't active. Activate first, then open Settings.
+        HStack(spacing: 8) {
             Button("Réglages…") {
                 NSApp.activate(ignoringOtherApps: true)
                 openSettings()
             }
             Spacer()
-            Button("Quitter") { NSApplication.shared.terminate(nil) }
+            if vm.linkCopied {
+                Text("Nouveau lien copié")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .transition(.opacity)
+            }
+            Button("Créer un lien") { vm.createLink() }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+        .animation(.default, value: vm.linkCopied)
     }
 
     private var accessDenied: some View {
