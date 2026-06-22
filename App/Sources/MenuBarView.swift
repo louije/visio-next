@@ -36,13 +36,17 @@ struct MenuBarView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            if vm.linkCopied {
-                Text("Nouveau lien copié")
-                    .font(.caption)
-                    .transition(.opacity)
-            } else {
+            // Keep the button in the layout (invisible + disabled when copied) so the
+            // caption inherits its exact height — no reflow on swap.
+            ZStack(alignment: .leading) {
                 Button { vm.createLink() } label: {
                     Label("Créer un lien", systemImage: "clipboard")
+                }
+                .opacity(vm.linkCopied ? 0 : 1)
+                .disabled(vm.linkCopied)
+
+                if vm.linkCopied {
+                    Text("Nouveau lien copié").font(.body)
                 }
             }
             Spacer()
@@ -56,7 +60,6 @@ struct MenuBarView: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal)
         .padding(.vertical, 8)
-        .animation(.default, value: vm.linkCopied)
     }
 
     private var accessDenied: some View {
