@@ -5,15 +5,40 @@ public struct Settings: Codable, Equatable, Sendable {
     public var providers: [VideoProvider]
     public var openInBundleID: String?
     public var allowAnyURLFallback: Bool
+    public var linkTemplate: LinkTemplate
 
     public init(selectedCalendarIDs: Set<String> = [],
                 providers: [VideoProvider] = VideoProvider.defaults,
                 openInBundleID: String? = nil,
-                allowAnyURLFallback: Bool = false) {
+                allowAnyURLFallback: Bool = false,
+                linkTemplate: LinkTemplate = .default) {
         self.selectedCalendarIDs = selectedCalendarIDs
         self.providers = providers
         self.openInBundleID = openInBundleID
         self.allowAnyURLFallback = allowAnyURLFallback
+        self.linkTemplate = linkTemplate
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case selectedCalendarIDs, providers, openInBundleID, allowAnyURLFallback, linkTemplate
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        selectedCalendarIDs = try c.decodeIfPresent(Set<String>.self, forKey: .selectedCalendarIDs) ?? []
+        providers = try c.decodeIfPresent([VideoProvider].self, forKey: .providers) ?? VideoProvider.defaults
+        openInBundleID = try c.decodeIfPresent(String.self, forKey: .openInBundleID)
+        allowAnyURLFallback = try c.decodeIfPresent(Bool.self, forKey: .allowAnyURLFallback) ?? false
+        linkTemplate = try c.decodeIfPresent(LinkTemplate.self, forKey: .linkTemplate) ?? .default
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(selectedCalendarIDs, forKey: .selectedCalendarIDs)
+        try c.encode(providers, forKey: .providers)
+        try c.encodeIfPresent(openInBundleID, forKey: .openInBundleID)
+        try c.encode(allowAnyURLFallback, forKey: .allowAnyURLFallback)
+        try c.encode(linkTemplate, forKey: .linkTemplate)
     }
 }
 
