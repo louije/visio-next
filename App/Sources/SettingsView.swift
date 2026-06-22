@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import VisioCore
 
 struct SettingsView: View {
@@ -6,12 +7,12 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
+            GeneralSettings(onChange: onChange)
+                .tabItem { Label("Général", systemImage: "gearshape") }
             CalendarsSettings(onChange: onChange)
                 .tabItem { Label("Calendriers", systemImage: "calendar") }
             ProvidersSettings(onChange: onChange)
                 .tabItem { Label("Services visio", systemImage: "video") }
-            GeneralSettings(onChange: onChange)
-                .tabItem { Label("Liens & affichage", systemImage: "slider.horizontal.3") }
         }
         .frame(width: 480, height: 400)
     }
@@ -128,30 +129,62 @@ private struct GeneralSettings: View {
     private let browsers = LinkOpener.installedBrowsers()
 
     var body: some View {
-        Form {
-            Picker("Ouvrir les liens dans", selection: Binding(
-                get: { settings.openInBundleID },
-                set: { settings.openInBundleID = $0; persist() }
-            )) {
-                Text("Navigateur par défaut").tag(String?.none)
-                if !browsers.isEmpty { Divider() }
-                ForEach(browsers) { browser in
-                    Text(browser.name).tag(String?.some(browser.bundleID))
+        VStack(spacing: 0) {
+            Form {
+                Picker("Ouvrir les liens dans", selection: Binding(
+                    get: { settings.openInBundleID },
+                    set: { settings.openInBundleID = $0; persist() }
+                )) {
+                    Text("Navigateur par défaut").tag(String?.none)
+                    if !browsers.isEmpty { Divider() }
+                    ForEach(browsers) { browser in
+                        Text(browser.name).tag(String?.some(browser.bundleID))
+                    }
+                }
+
+                Section("Modèle de lien « Créer un lien »") {
+                    TextField("URL de base", text: Binding(
+                        get: { settings.linkTemplate.baseURL },
+                        set: { settings.linkTemplate.baseURL = $0; persist() }
+                    ))
+                    HStack(spacing: 4) {
+                        ForEach(settings.linkTemplate.blocks.indices, id: \.self) { index in
+                            blockField(index)
+                            if index < settings.linkTemplate.blocks.count - 1 {
+                                Text("-").foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer()
+                    }
+                    Text("Laissez un bloc vide pour le tirer au hasard.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
+            .formStyle(.grouped)
 
-            Toggle(isOn: Binding(
-                get: { settings.allowAnyURLFallback },
-                set: { settings.allowAnyURLFallback = $0; persist() }
-            )) {
-                Text("Repli sur n’importe quel lien")
-                Text("Si aucun service visio ne correspond, ouvrir le premier lien trouvé.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Divider()
+            HStack {
+                Spacer()
+                Button("Quitter visio-next") { NSApplication.shared.terminate(nil) }
             }
+            .padding()
         }
-        .formStyle(.grouped)
         .onAppear { settings = VisioCore.Settings.load(from: AppGroup.defaults) }
+    }
+
+    private func blockField(_ index: Int) -> some View {
+        TextField("aléatoire", text: Binding(
+            get: { settings.linkTemplate.blocks[index].value },
+            set: { newValue in
+                let limit = settings.linkTemplate.blocks[index].length
+                settings.linkTemplate.blocks[index].value = String(newValue.prefix(limit))
+                persist()
+            }
+        ))
+        .font(.system(.body, design: .monospaced))
+        .multilineTextAlignment(.center)
+        .frame(width: 64)
     }
 
     private func persist() {
