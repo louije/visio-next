@@ -36,23 +36,23 @@ struct MenuBarView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            Button { vm.createLink() } label: {
-                Label("Créer un lien", systemImage: "clipboard")
-            }
             if vm.linkCopied {
                 Text("Nouveau lien copié")
                     .font(.caption)
                     .transition(.opacity)
+            } else {
+                Button { vm.createLink() } label: {
+                    Label("Créer un lien", systemImage: "clipboard")
+                }
             }
             Spacer()
             Button {
                 NSApp.activate(ignoringOtherApps: true)
                 openSettings()
             } label: {
-                Label("Réglages…", systemImage: "gearshape")
+                Label("Réglages", systemImage: "gearshape")
             }
         }
-        .buttonStyle(.plain)
         .foregroundStyle(.secondary)
         .padding(.horizontal)
         .padding(.vertical, 8)
