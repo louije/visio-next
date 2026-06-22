@@ -31,16 +31,9 @@ private let providers = VideoProvider.defaults
     #expect(link?.providerName == "Zoom")
 }
 
-@Test func returnsNilWhenNoProviderMatchesAndFallbackOff() {
+@Test func returnsNilWhenNoProviderMatches() {
     let fields = EventFields(notes: "see https://example.com/agenda")
     #expect(LinkExtractor.extract(from: fields, providers: providers) == nil)
-}
-
-@Test func fallbackTakesFirstURLWhenEnabled() {
-    let fields = EventFields(notes: "see https://example.com/agenda")
-    let link = LinkExtractor.extract(from: fields, providers: providers, allowAnyURLFallback: true)
-    #expect(link?.url.absoluteString == "https://example.com/agenda")
-    #expect(link?.providerName == nil)
 }
 
 @Test func disabledProviderIsIgnored() {

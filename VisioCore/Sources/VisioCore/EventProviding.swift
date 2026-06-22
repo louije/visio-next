@@ -23,6 +23,5 @@ public protocol EventProviding {
     func calendars() -> [CalendarNode]
     func meetings(in window: DateInterval,
                   selectedCalendarIDs: Set<String>,
-                  providers: [VideoProvider],
-                  allowAnyURLFallback: Bool) async -> [Meeting]
+                  providers: [VideoProvider]) async -> [Meeting]
 }

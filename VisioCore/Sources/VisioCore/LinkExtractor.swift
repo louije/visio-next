@@ -22,10 +22,8 @@ public struct ExtractedLink: Equatable, Sendable {
 public enum LinkExtractor {
     /// Scans the event's fields in priority order (url, location, notes, title) and
     /// returns the first URL whose string contains an enabled provider's pattern.
-    /// If none match and `allowAnyURLFallback` is true, returns the first URL found.
     public static func extract(from fields: EventFields,
-                               providers: [VideoProvider],
-                               allowAnyURLFallback: Bool = false) -> ExtractedLink? {
+                               providers: [VideoProvider]) -> ExtractedLink? {
         let enabled = providers.filter { $0.enabled }
         let blobs = candidateBlobs(fields)
 
@@ -36,14 +34,6 @@ public enum LinkExtractor {
                     s.range(of: $0.pattern, options: .caseInsensitive) != nil
                 }) {
                     return ExtractedLink(url: url, providerName: provider.name)
-                }
-            }
-        }
-
-        if allowAnyURLFallback {
-            for blob in blobs {
-                if let url = urls(in: blob).first {
-                    return ExtractedLink(url: url, providerName: nil)
                 }
             }
         }

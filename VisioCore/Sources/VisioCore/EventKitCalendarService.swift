@@ -36,8 +36,7 @@ public final class EventKitCalendarService: EventProviding {
 
     public func meetings(in window: DateInterval,
                          selectedCalendarIDs: Set<String>,
-                         providers: [VideoProvider],
-                         allowAnyURLFallback: Bool) async -> [Meeting] {
+                         providers: [VideoProvider]) async -> [Meeting] {
         guard !isPreview else { return [] }
         let all = store.calendars(for: .event)
         let chosen = selectedCalendarIDs.isEmpty
@@ -48,8 +47,7 @@ public final class EventKitCalendarService: EventProviding {
         let predicate = store.predicateForEvents(withStart: window.start, end: window.end, calendars: chosen)
         return store.events(matching: predicate).map { ev in
             let fields = EventFields(url: ev.url, location: ev.location, notes: ev.notes, title: ev.title)
-            let link = LinkExtractor.extract(from: fields, providers: providers,
-                                             allowAnyURLFallback: allowAnyURLFallback)
+            let link = LinkExtractor.extract(from: fields, providers: providers)
             return Meeting(
                 id: ev.eventIdentifier ?? "\(ev.calendar.calendarIdentifier)-\(ev.startDate.timeIntervalSince1970)",
                 title: ev.title ?? "(sans titre)",
