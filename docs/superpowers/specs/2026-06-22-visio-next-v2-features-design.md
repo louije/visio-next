@@ -35,7 +35,9 @@ and review pass.
 - `LinkBlock { length: Int; value: String }` — `value` empty ⇒ random.
 - `LinkTemplate { baseURL: String; blocks: [LinkBlock] }`.
   Default: `baseURL = "https://visio.numerique.gouv.fr/"`,
-  `blocks = [LinkBlock(3, "pdi"), LinkBlock(4, ""), LinkBlock(3, "ljt")]`.
+  `blocks = [LinkBlock(3, ""), LinkBlock(4, ""), LinkBlock(3, "")]` — all blocks blank
+  (fully random) for new users. (The maintainer fills in their own `pdi` / `ljt` via
+  Settings.)
 - `LinkGenerator.generate(from: LinkTemplate, using: inout RandomNumberGenerator)`
   → for each block, its `value` if non-empty, else a random `[a-z0-9]` string of
   `length`; blocks joined with `-`; result prefixed by `baseURL`. The injected RNG
