@@ -53,9 +53,7 @@ private func freshDefaults() -> UserDefaults {
     let d = freshDefaults()
     var s = Settings()
     s.linkTemplate = LinkTemplate(baseURL: "https://x.test/",
-                                  blocks: [LinkBlock(length: 3, value: "pdi"),
-                                           LinkBlock(length: 4),
-                                           LinkBlock(length: 3, value: "ljt")])
+                                  mask: ["p", "d", "i", "", "", "", "", "l", "j", "t"])
     s.save(to: d)
     #expect(Settings.load(from: d).linkTemplate == s.linkTemplate)
 }

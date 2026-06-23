@@ -164,16 +164,16 @@ private struct GeneralSettings: View {
                         get: { settings.linkTemplate.baseURL },
                         set: { settings.linkTemplate.baseURL = $0; persist() }
                     ))
-                    HStack(spacing: 4) {
-                        ForEach(settings.linkTemplate.blocks.indices, id: \.self) { index in
-                            blockField(index)
-                            if index < settings.linkTemplate.blocks.count - 1 {
+                    HStack(spacing: 3) {
+                        ForEach(0..<LinkTemplate.length, id: \.self) { index in
+                            maskField(index)
+                            if dashAfterIndex.contains(index) {
                                 Text("-").foregroundStyle(.secondary)
                             }
                         }
                         Spacer()
                     }
-                    Text("Laissez un bloc vide pour le tirer au hasard.")
+                    Text("Laissez une case vide pour la tirer au hasard.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -190,18 +190,28 @@ private struct GeneralSettings: View {
         .onAppear { settings = VisioCore.Settings.load(from: AppGroup.defaults) }
     }
 
-    private func blockField(_ index: Int) -> some View {
-        TextField("aléatoire", text: Binding(
-            get: { settings.linkTemplate.blocks[index].value },
+    /// Slug indices after which a dash is shown (group boundaries, last group excluded).
+    private var dashAfterIndex: Set<Int> {
+        var result = Set<Int>()
+        var index = 0
+        for group in LinkTemplate.groups.dropLast() {
+            index += group
+            result.insert(index - 1)
+        }
+        return result
+    }
+
+    private func maskField(_ index: Int) -> some View {
+        TextField("", text: Binding(
+            get: { settings.linkTemplate.mask[index] },
             set: { newValue in
-                let limit = settings.linkTemplate.blocks[index].length
-                settings.linkTemplate.blocks[index].value = String(newValue.prefix(limit))
+                settings.linkTemplate.mask[index] = String(newValue.suffix(1))
                 persist()
             }
         ))
         .font(.system(.body, design: .monospaced))
         .multilineTextAlignment(.center)
-        .frame(width: 64)
+        .frame(width: 24)
     }
 
     private func colorSwatch(_ color: IconColor) -> some View {

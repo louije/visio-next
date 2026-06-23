@@ -13,20 +13,17 @@ private struct SeededRNG: RandomNumberGenerator {
 
 private let charset = Set("abcdefghijklmnopqrstuvwxyz0123456789")
 
-@Test func literalBlocksAreUsedVerbatim() {
+@Test func fullyFixedMaskIsUsedVerbatimAndGrouped() {
     let template = LinkTemplate(baseURL: "https://x.test/",
-                                blocks: [LinkBlock(length: 3, value: "pdi"),
-                                         LinkBlock(length: 3, value: "abc"),
-                                         LinkBlock(length: 3, value: "ljt")])
+                                mask: ["p", "d", "i", "a", "b", "c", "d", "l", "j", "t"])
     var rng = SeededRNG(seed: 1)
-    #expect(LinkGenerator.generate(from: template, using: &rng) == "https://x.test/pdi-abc-ljt")
+    #expect(LinkGenerator.generate(from: template, using: &rng) == "https://x.test/pdi-abcd-ljt")
 }
 
-@Test func emptyBlocksBecomeRandomOfCorrectLengthAndCharset() {
+@Test func emptySlotsBecomeRandomKeepingFixedOnesAndGrouping() {
+    // Fix the first and last groups, randomize the middle four.
     let template = LinkTemplate(baseURL: "https://visio.numerique.gouv.fr/",
-                                blocks: [LinkBlock(length: 3, value: "pdi"),
-                                         LinkBlock(length: 4),
-                                         LinkBlock(length: 3, value: "ljt")])
+                                mask: ["p", "d", "i", "", "", "", "", "l", "j", "t"])
     var rng = SeededRNG(seed: 42)
     let link = LinkGenerator.generate(from: template, using: &rng)
 
@@ -38,6 +35,18 @@ private let charset = Set("abcdefghijklmnopqrstuvwxyz0123456789")
     #expect(parts[2] == "ljt")
     #expect(parts[1].count == 4)
     #expect(parts[1].allSatisfy { charset.contains($0) })
+}
+
+@Test func perCharacterFixedSlotsAreIndependent() {
+    // Only position 5 (in the middle group) is fixed; everything else random.
+    var mask = Array(repeating: "", count: 10)
+    mask[5] = "Z"
+    let template = LinkTemplate(baseURL: "https://x.test/", mask: mask)
+    var rng = SeededRNG(seed: 3)
+    let slug = String(LinkGenerator.generate(from: template, using: &rng).dropFirst("https://x.test/".count))
+    let parts = slug.split(separator: "-", omittingEmptySubsequences: false).map(String.init)
+    // Middle group is indices 3,4,5,6 → fixed char lands at offset 2.
+    #expect(Array(parts[1])[2] == "Z")
 }
 
 @Test func sameSeedProducesSameLink() {
