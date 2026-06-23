@@ -164,15 +164,7 @@ private struct GeneralSettings: View {
                         get: { settings.linkTemplate.baseURL },
                         set: { settings.linkTemplate.baseURL = $0; persist() }
                     ))
-                    HStack(spacing: 3) {
-                        ForEach(0..<LinkTemplate.length, id: \.self) { index in
-                            maskField(index)
-                            if dashAfterIndex.contains(index) {
-                                Text("-").foregroundStyle(.secondary)
-                            }
-                        }
-                        Spacer()
-                    }
+                    MaskComb(mask: $settings.linkTemplate.mask, onChange: persist)
                     Text("Laissez une case vide pour la tirer au hasard.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -188,30 +180,6 @@ private struct GeneralSettings: View {
             .padding()
         }
         .onAppear { settings = VisioCore.Settings.load(from: AppGroup.defaults) }
-    }
-
-    /// Slug indices after which a dash is shown (group boundaries, last group excluded).
-    private var dashAfterIndex: Set<Int> {
-        var result = Set<Int>()
-        var index = 0
-        for group in LinkTemplate.groups.dropLast() {
-            index += group
-            result.insert(index - 1)
-        }
-        return result
-    }
-
-    private func maskField(_ index: Int) -> some View {
-        TextField("", text: Binding(
-            get: { settings.linkTemplate.mask[index] },
-            set: { newValue in
-                settings.linkTemplate.mask[index] = String(newValue.suffix(1))
-                persist()
-            }
-        ))
-        .font(.system(.body, design: .monospaced))
-        .multilineTextAlignment(.center)
-        .frame(width: 24)
     }
 
     private func colorSwatch(_ color: IconColor) -> some View {
@@ -259,6 +227,79 @@ private struct GeneralSettings: View {
     private func persist() {
         settings.save(to: AppGroup.defaults)
         onChange()
+    }
+}
+
+// MARK: - Mask "comb" input
+
+/// An OTP-style comb of single-character cells for the link mask: visible boxes,
+/// auto-advance on type, backspace moves to the previous cell, input lowercased to
+/// `[a-z0-9]`. Dashes are drawn at the group boundaries.
+private struct MaskComb: View {
+    @Binding var mask: [String]
+    var onChange: () -> Void
+
+    @FocusState private var focused: Int?
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(mask.indices, id: \.self) { index in
+                cell(index)
+                if dashAfterIndex.contains(index) {
+                    Text("-").foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+        }
+    }
+
+    private func cell(_ index: Int) -> some View {
+        TextField("", text: Binding(
+            get: { mask[index] },
+            set: { handleInput($0, at: index) }
+        ))
+        .textFieldStyle(.plain)
+        .multilineTextAlignment(.center)
+        .font(.system(.body, design: .monospaced))
+        .frame(width: 26, height: 30)
+        .background(RoundedRectangle(cornerRadius: 6).fill(Color(nsColor: .textBackgroundColor)))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(focused == index ? Color.accentColor : Color.secondary.opacity(0.4),
+                              lineWidth: focused == index ? 2 : 1)
+        )
+        .focused($focused, equals: index)
+        .onKeyPress(.delete) { handleDelete(at: index) }
+    }
+
+    private func handleInput(_ raw: String, at index: Int) {
+        let char = raw.lowercased().last { $0.isLetter || $0.isNumber }.map(String.init) ?? ""
+        mask[index] = char
+        onChange()
+        if !char.isEmpty, index + 1 < mask.count {
+            focused = index + 1
+        }
+    }
+
+    private func handleDelete(at index: Int) -> KeyPress.Result {
+        // Empty cell: jump back and clear the previous one. Non-empty: let the field clear it.
+        guard mask[index].isEmpty else { return .ignored }
+        if index > 0 {
+            mask[index - 1] = ""
+            onChange()
+            focused = index - 1
+        }
+        return .handled
+    }
+
+    private var dashAfterIndex: Set<Int> {
+        var result = Set<Int>()
+        var index = 0
+        for group in LinkTemplate.groups.dropLast() {
+            index += group
+            result.insert(index - 1)
+        }
+        return result
     }
 }
 
