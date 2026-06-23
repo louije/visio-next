@@ -230,76 +230,114 @@ private struct GeneralSettings: View {
     }
 }
 
-// MARK: - Mask "comb" input
+// MARK: - Mask "comb" input (AppKit)
 
-/// An OTP-style comb of single-character cells for the link mask: visible boxes,
-/// auto-advance on type, backspace moves to the previous cell, input lowercased to
-/// `[a-z0-9]`. Dashes are drawn at the group boundaries.
-private struct MaskComb: View {
+/// An OTP-style comb of single-character cells, backed by AppKit for proper text
+/// behavior: native boxed/centered cells, auto-advance on type, backspace moves to the
+/// previous cell, arrow keys and Tab move between cells, input lowercased to `[a-z0-9]`.
+private struct MaskComb: NSViewRepresentable {
     @Binding var mask: [String]
     var onChange: () -> Void
 
-    @FocusState private var focused: Int?
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
 
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(mask.indices, id: \.self) { index in
-                cell(index)
-                if dashAfterIndex.contains(index) {
-                    Text("-").foregroundStyle(.secondary)
-                }
+    func makeNSView(context: Context) -> NSStackView {
+        let stack = NSStackView()
+        stack.orientation = .horizontal
+        stack.spacing = 4
+        stack.alignment = .centerY
+        stack.setHuggingPriority(.required, for: .horizontal)
+
+        var fields: [NSTextField] = []
+        var groupIndex = 0
+        var posInGroup = 0
+
+        for index in mask.indices {
+            let field = NSTextField()
+            field.tag = index
+            field.delegate = context.coordinator
+            field.alignment = .center
+            field.font = .monospacedSystemFont(ofSize: 15, weight: .regular)
+            field.isBezeled = true
+            field.bezelStyle = .squareBezel
+            field.usesSingleLineMode = true
+            field.translatesAutoresizingMaskIntoConstraints = false
+            field.widthAnchor.constraint(equalToConstant: 28).isActive = true
+            field.heightAnchor.constraint(equalToConstant: 30).isActive = true
+            field.stringValue = index < mask.count ? mask[index] : ""
+            stack.addArrangedSubview(field)
+            fields.append(field)
+
+            posInGroup += 1
+            if groupIndex < LinkTemplate.groups.count - 1, posInGroup == LinkTemplate.groups[groupIndex] {
+                let dash = NSTextField(labelWithString: "-")
+                dash.textColor = .secondaryLabelColor
+                stack.addArrangedSubview(dash)
+                groupIndex += 1
+                posInGroup = 0
             }
-            Spacer()
+        }
+
+        for i in 0..<max(0, fields.count - 1) { fields[i].nextKeyView = fields[i + 1] }
+        context.coordinator.fields = fields
+        return stack
+    }
+
+    func updateNSView(_ nsView: NSStackView, context: Context) {
+        for field in context.coordinator.fields {
+            let i = field.tag
+            if i < mask.count, field.stringValue != mask[i] {
+                field.stringValue = mask[i]
+            }
         }
     }
 
-    private func cell(_ index: Int) -> some View {
-        TextField("", text: Binding(
-            get: { mask[index] },
-            set: { handleInput($0, at: index) }
-        ))
-        .textFieldStyle(.plain)
-        .multilineTextAlignment(.center)
-        .font(.system(.body, design: .monospaced))
-        .frame(width: 26, height: 30)
-        .background(RoundedRectangle(cornerRadius: 6).fill(Color(nsColor: .textBackgroundColor)))
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(focused == index ? Color.accentColor : Color.secondary.opacity(0.4),
-                              lineWidth: focused == index ? 2 : 1)
-        )
-        .focused($focused, equals: index)
-        .onKeyPress(.delete) { handleDelete(at: index) }
-    }
+    final class Coordinator: NSObject, NSTextFieldDelegate {
+        private let parent: MaskComb
+        var fields: [NSTextField] = []
 
-    private func handleInput(_ raw: String, at index: Int) {
-        let char = raw.lowercased().last { $0.isLetter || $0.isNumber }.map(String.init) ?? ""
-        mask[index] = char
-        onChange()
-        if !char.isEmpty, index + 1 < mask.count {
-            focused = index + 1
-        }
-    }
+        init(_ parent: MaskComb) { self.parent = parent }
 
-    private func handleDelete(at index: Int) -> KeyPress.Result {
-        // Empty cell: jump back and clear the previous one. Non-empty: let the field clear it.
-        guard mask[index].isEmpty else { return .ignored }
-        if index > 0 {
-            mask[index - 1] = ""
-            onChange()
-            focused = index - 1
+        func controlTextDidChange(_ note: Notification) {
+            guard let field = note.object as? NSTextField else { return }
+            let char = field.stringValue.lowercased().last { $0.isLetter || $0.isNumber }.map(String.init) ?? ""
+            field.stringValue = char
+            setMask(field.tag, char)
+            if !char.isEmpty { focus(field.tag + 1) }
         }
-        return .handled
-    }
 
-    private var dashAfterIndex: Set<Int> {
-        var result = Set<Int>()
-        var index = 0
-        for group in LinkTemplate.groups.dropLast() {
-            index += group
-            result.insert(index - 1)
+        func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+            guard let field = control as? NSTextField else { return false }
+            let i = field.tag
+            switch selector {
+            case #selector(NSResponder.deleteBackward(_:)):
+                if field.stringValue.isEmpty {
+                    if i > 0 { fields[i - 1].stringValue = ""; setMask(i - 1, ""); focus(i - 1) }
+                } else {
+                    field.stringValue = ""; setMask(i, "")
+                }
+                return true
+            case #selector(NSResponder.moveLeft(_:)), #selector(NSResponder.insertBacktab(_:)):
+                focus(i - 1); return true
+            case #selector(NSResponder.moveRight(_:)), #selector(NSResponder.insertTab(_:)):
+                focus(i + 1); return true
+            default:
+                return false
+            }
         }
-        return result
+
+        private func setMask(_ index: Int, _ value: String) {
+            guard index >= 0, index < parent.mask.count else { return }
+            parent.mask[index] = value
+            parent.onChange()
+        }
+
+        private func focus(_ index: Int) {
+            guard index >= 0, index < fields.count else { return }
+            let field = fields[index]
+            field.window?.makeFirstResponder(field)
+            field.currentEditor()?.selectedRange = NSRange(location: 0, length: field.stringValue.count)
+        }
     }
 }
 
