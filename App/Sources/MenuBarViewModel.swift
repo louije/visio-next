@@ -8,37 +8,30 @@ import VisioCore
 final class MenuBarViewModel: ObservableObject {
     @Published var meetings: [Meeting] = []
     @Published var access: CalendarAccess = .notDetermined
-    @Published var isImminent: Bool = false {
-        didSet { if oldValue != isImminent { syncPulse() } }
-    }
+    @Published var isImminent: Bool = false
     @Published var linkCopied = false
-    /// 0…1 pulse phase for the menu bar icon while a meeting is imminent.
-    @Published var pulse: Double = 1
+    /// Chosen menu bar color for the imminent state.
+    @Published var imminentColor: IconColor
 
     let imminentThreshold: TimeInterval = 5 * 60
-
-    /// Whether the imminent icon breathes. Set false for a steady tint.
-    private let pulsesWhenImminent = true
-    private let pulsePeriod: TimeInterval = 1.6
 
     private let service: EventProviding
     private var settings: VisioCore.Settings
     private var timer: Timer?
     private var observerToken: NSObjectProtocol?
     private var confirmationTask: Task<Void, Never>?
-    private var pulseTimer: Timer?
 
     init(service: EventProviding = EventKitCalendarService(),
          settings: VisioCore.Settings = VisioCore.Settings.load(from: AppGroup.defaults)) {
         self.service = service
         self.settings = settings
         self.access = service.access()
+        self.imminentColor = settings.imminentColor
         Task { await bootstrap() }
     }
 
     isolated deinit {
         timer?.invalidate()
-        pulseTimer?.invalidate()
         if let observerToken {
             NotificationCenter.default.removeObserver(observerToken)
         }
@@ -55,6 +48,7 @@ final class MenuBarViewModel: ObservableObject {
 
     func reloadSettings() {
         settings = VisioCore.Settings.load(from: AppGroup.defaults)
+        imminentColor = settings.imminentColor
         Task { await refresh() }
     }
 
@@ -94,32 +88,6 @@ final class MenuBarViewModel: ObservableObject {
             guard !Task.isCancelled else { return }
             withAnimation { self?.linkCopied = false }   // animate the button back
         }
-    }
-
-    private func syncPulse() {
-        if isImminent && pulsesWhenImminent {
-            startPulse()
-        } else {
-            stopPulse()
-        }
-    }
-
-    private func startPulse() {
-        guard pulseTimer == nil else { return }
-        let start = Date()
-        pulseTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 24.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                guard let self else { return }
-                let t = Date().timeIntervalSince(start)
-                self.pulse = 0.5 * (1 + sin(2 * .pi * t / self.pulsePeriod))
-            }
-        }
-    }
-
-    private func stopPulse() {
-        pulseTimer?.invalidate()
-        pulseTimer = nil
-        pulse = 1
     }
 
     private func startAutoRefresh() {

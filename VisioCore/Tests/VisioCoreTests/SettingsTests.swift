@@ -37,6 +37,18 @@ private func freshDefaults() -> UserDefaults {
     #expect(Settings().linkTemplate == LinkTemplate.default)
 }
 
+@Test func defaultImminentColorIsRed() {
+    #expect(Settings().imminentColor == .red)
+}
+
+@Test func saveThenLoadRoundTripsImminentColor() {
+    let d = freshDefaults()
+    var s = Settings()
+    s.imminentColor = .bicolor
+    s.save(to: d)
+    #expect(Settings.load(from: d).imminentColor == .bicolor)
+}
+
 @Test func saveThenLoadRoundTripsLinkTemplate() {
     let d = freshDefaults()
     var s = Settings()

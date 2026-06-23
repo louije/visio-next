@@ -142,6 +142,15 @@ private struct GeneralSettings: View {
                     }
                 }
 
+                Picker("Couleur (appel imminent)", selection: Binding(
+                    get: { settings.imminentColor },
+                    set: { settings.imminentColor = $0; persist() }
+                )) {
+                    ForEach(IconColor.allCases, id: \.self) { color in
+                        Text(color.displayName).tag(color)
+                    }
+                }
+
                 Section("Modèle de lien « Créer un lien »") {
                     TextField("URL de base", text: Binding(
                         get: { settings.linkTemplate.baseURL },
@@ -190,5 +199,18 @@ private struct GeneralSettings: View {
     private func persist() {
         settings.save(to: AppGroup.defaults)
         onChange()
+    }
+}
+
+private extension IconColor {
+    var displayName: String {
+        switch self {
+        case .white: return "Blanc"
+        case .red: return "Rouge"
+        case .pink: return "Rose"
+        case .green: return "Vert"
+        case .blue: return "Bleu"
+        case .bicolor: return "Bicolore"
+        }
     }
 }

@@ -5,19 +5,22 @@ public struct Settings: Codable, Equatable, Sendable {
     public var providers: [VideoProvider]
     public var openInBundleID: String?
     public var linkTemplate: LinkTemplate
+    public var imminentColor: IconColor
 
     public init(selectedCalendarIDs: Set<String> = [],
                 providers: [VideoProvider] = VideoProvider.defaults,
                 openInBundleID: String? = nil,
-                linkTemplate: LinkTemplate = .default) {
+                linkTemplate: LinkTemplate = .default,
+                imminentColor: IconColor = .red) {
         self.selectedCalendarIDs = selectedCalendarIDs
         self.providers = providers
         self.openInBundleID = openInBundleID
         self.linkTemplate = linkTemplate
+        self.imminentColor = imminentColor
     }
 
     enum CodingKeys: String, CodingKey {
-        case selectedCalendarIDs, providers, openInBundleID, linkTemplate
+        case selectedCalendarIDs, providers, openInBundleID, linkTemplate, imminentColor
     }
 
     public init(from decoder: Decoder) throws {
@@ -26,6 +29,7 @@ public struct Settings: Codable, Equatable, Sendable {
         providers = try c.decodeIfPresent([VideoProvider].self, forKey: .providers) ?? VideoProvider.defaults
         openInBundleID = try c.decodeIfPresent(String.self, forKey: .openInBundleID)
         linkTemplate = try c.decodeIfPresent(LinkTemplate.self, forKey: .linkTemplate) ?? .default
+        imminentColor = try c.decodeIfPresent(IconColor.self, forKey: .imminentColor) ?? .red
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -34,6 +38,7 @@ public struct Settings: Codable, Equatable, Sendable {
         try c.encode(providers, forKey: .providers)
         try c.encodeIfPresent(openInBundleID, forKey: .openInBundleID)
         try c.encode(linkTemplate, forKey: .linkTemplate)
+        try c.encode(imminentColor, forKey: .imminentColor)
     }
 }
 

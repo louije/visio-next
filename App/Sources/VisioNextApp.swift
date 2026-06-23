@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import VisioCore
 
 @main
 struct VisioNextApp: App {
@@ -9,9 +10,9 @@ struct VisioNextApp: App {
         MenuBarExtra {
             MenuBarView(vm: vm)
         } label: {
-            // Custom visio glyph: template (auto-tinted to the menu bar) normally,
-            // tinted (and pulsing) when a meeting with a link is imminent.
-            Image(nsImage: MenuBarIcon.image(imminent: vm.isImminent, pulse: vm.pulse))
+            // Normal: monochrome template glyph (auto-tinted to the menu bar).
+            // Imminent: switches to the user's chosen color (or the bicolor brand glyph).
+            Image(nsImage: MenuBarIcon.image(imminent: vm.isImminent, color: vm.imminentColor))
         }
         .menuBarExtraStyle(.window)
 
@@ -24,15 +25,7 @@ struct VisioNextApp: App {
 enum MenuBarIcon {
     private static let pointSize = NSSize(width: 18, height: 18)
 
-    /// Tint used for the "imminent" state. Swap to taste, e.g.:
-    /// `.systemRed`, `.systemOrange`, `.systemPink`, `.controlAccentColor`.
-    static let imminentColor: NSColor = .systemRed
-
-    /// Faintest opacity reached at the bottom of a pulse (1 = no fade).
-    private static let pulseMinOpacity: CGFloat = 0.35
-
-    /// - Parameter pulse: 0…1 phase from the view model; 1 = full intensity.
-    static func image(imminent: Bool, pulse: Double = 1) -> NSImage {
+    static func image(imminent: Bool, color: IconColor) -> NSImage {
         let base = NSImage(named: "VisioIcon")
             ?? NSImage(systemSymbolName: "video", accessibilityDescription: "visio-next")!
         let rect = NSRect(origin: .zero, size: pointSize)
@@ -44,21 +37,33 @@ enum MenuBarIcon {
             return template
         }
 
-        // Fully-tinted glyph (non-template so the color shows).
-        let solid = NSImage(size: pointSize)
-        solid.lockFocus()
-        base.draw(in: rect)
-        imminentColor.set()
-        rect.fill(using: .sourceAtop)
-        solid.unlockFocus()
+        // Bicolor: the two-tone brand glyph, shown in its own colors.
+        if color == .bicolor, let brand = NSImage(named: "VisioIconColor") {
+            let out = (brand.copy() as! NSImage)
+            out.size = pointSize
+            out.isTemplate = false
+            return out
+        }
 
-        // Composite it at the pulse opacity so the icon visibly breathes.
-        let opacity = pulseMinOpacity + (1 - pulseMinOpacity) * CGFloat(pulse)
+        // Solid tint: fill the glyph with the chosen color (non-template so it shows).
         let out = NSImage(size: pointSize)
         out.lockFocus()
-        solid.draw(in: rect, from: rect, operation: .sourceOver, fraction: opacity)
+        base.draw(in: rect)
+        nsColor(for: color).set()
+        rect.fill(using: .sourceAtop)
         out.unlockFocus()
         out.isTemplate = false
         return out
+    }
+
+    private static func nsColor(for color: IconColor) -> NSColor {
+        switch color {
+        case .white: return .white
+        case .red: return .systemRed
+        case .pink: return .systemPink
+        case .green: return .systemGreen
+        case .blue: return .systemBlue
+        case .bicolor: return .systemRed  // unused (handled above)
+        }
     }
 }
