@@ -4,17 +4,25 @@ import VisioCore
 
 struct SettingsView: View {
     var onChange: () -> Void
+    @State private var tab: Tab = .general
+
+    private enum Tab { case general, calendars, providers }
 
     var body: some View {
-        TabView {
+        TabView(selection: $tab) {
             GeneralSettings(onChange: onChange)
                 .tabItem { Label("Général", systemImage: "gearshape") }
+                .tag(Tab.general)
             CalendarsSettings(onChange: onChange)
                 .tabItem { Label("Calendriers", systemImage: "calendar") }
+                .tag(Tab.calendars)
             ProvidersSettings(onChange: onChange)
                 .tabItem { Label("Services visio", systemImage: "video") }
+                .tag(Tab.providers)
         }
         .frame(width: 480, height: 400)
+        // Always show Général when the window opens (don't restore the last tab).
+        .onAppear { tab = .general }
     }
 }
 
@@ -142,12 +150,12 @@ private struct GeneralSettings: View {
                     }
                 }
 
-                Picker("Couleur (appel imminent)", selection: Binding(
-                    get: { settings.imminentColor },
-                    set: { settings.imminentColor = $0; persist() }
-                )) {
-                    ForEach(IconColor.allCases, id: \.self) { color in
-                        Text(color.displayName).tag(color)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Couleur (appel imminent)")
+                    HStack(spacing: 10) {
+                        ForEach(IconColor.allCases, id: \.self) { color in
+                            colorSwatch(color)
+                        }
                     }
                 }
 
@@ -194,6 +202,47 @@ private struct GeneralSettings: View {
         .font(.system(.body, design: .monospaced))
         .multilineTextAlignment(.center)
         .frame(width: 64)
+    }
+
+    private func colorSwatch(_ color: IconColor) -> some View {
+        Button {
+            settings.imminentColor = color
+            persist()
+        } label: {
+            glyph(for: color)
+                .frame(width: 20, height: 20)
+                .padding(5)
+                .background(RoundedRectangle(cornerRadius: 6).fill(.quaternary))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(.tint, lineWidth: settings.imminentColor == color ? 2 : 0)
+                )
+        }
+        .buttonStyle(.plain)
+        .help(color.displayName)
+    }
+
+    @ViewBuilder private func glyph(for color: IconColor) -> some View {
+        if color == .bicolor {
+            Image("VisioIconColor").resizable().scaledToFit()
+        } else {
+            Image("VisioIcon")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(swiftUIColor(color))
+        }
+    }
+
+    private func swiftUIColor(_ color: IconColor) -> Color {
+        switch color {
+        case .white: return .white
+        case .red: return .red
+        case .pink: return .pink
+        case .green: return .green
+        case .blue: return .blue
+        case .bicolor: return .primary
+        }
     }
 
     private func persist() {

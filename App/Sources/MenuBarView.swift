@@ -56,6 +56,7 @@ struct MenuBarView: View {
             } label: {
                 Label("Réglages", systemImage: "gearshape")
             }
+            .keyboardShortcut(",", modifiers: .command)
         }
         .foregroundStyle(.secondary)
         .padding(.horizontal)
