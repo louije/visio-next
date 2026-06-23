@@ -60,7 +60,8 @@ enum MenuBarIcon {
         switch color {
         case .white: return .white
         case .red: return .systemRed
-        case .pink: return .systemPink
+        case .orange: return .systemOrange
+        case .pink: return NSColor(srgbRed: 1.0, green: 0.18, blue: 0.60, alpha: 1)
         case .green: return .systemGreen
         case .blue: return .systemBlue
         case .bicolor: return .systemRed  // unused (handled above)

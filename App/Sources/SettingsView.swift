@@ -238,7 +238,8 @@ private struct GeneralSettings: View {
         switch color {
         case .white: return .white
         case .red: return .red
-        case .pink: return .pink
+        case .orange: return .orange
+        case .pink: return Color(red: 1.0, green: 0.18, blue: 0.60)
         case .green: return .green
         case .blue: return .blue
         case .bicolor: return .primary
@@ -256,6 +257,7 @@ private extension IconColor {
         switch self {
         case .white: return "Blanc"
         case .red: return "Rouge"
+        case .orange: return "Orange"
         case .pink: return "Rose"
         case .green: return "Vert"
         case .blue: return "Bleu"
