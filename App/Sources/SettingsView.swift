@@ -164,7 +164,11 @@ private struct GeneralSettings: View {
                         get: { settings.linkTemplate.baseURL },
                         set: { settings.linkTemplate.baseURL = $0; persist() }
                     ))
-                    MaskComb(mask: $settings.linkTemplate.mask, onChange: persist)
+                    HStack {
+                        MaskComb(mask: $settings.linkTemplate.mask, onChange: persist)
+                            .fixedSize()
+                        Spacer()
+                    }
                     Text("Laissez une case vide pour la tirer au hasard.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
