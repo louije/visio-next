@@ -31,3 +31,25 @@ targets:
         SWIFT_VERSION: "6.0"
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
+
+# Custom "Install" scheme: select it and ⌘B to build, Developer ID-sign, and install
+# the app into ~/Applications. The post-build action delegates to Scripts/install.sh
+# (which signs + installs into ~/Applications using its own DerivedData, so it doesn't
+# collide with Xcode's build).
+schemes:
+  VisioNext:
+    build:
+      targets:
+        VisioNext: all
+    run:
+      config: Debug
+  Install:
+    build:
+      targets:
+        VisioNext: [build]
+      postActions:
+        - name: "Build, sign & install to ~/Applications"
+          settingsTarget: VisioNext
+          script: |
+            export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+            "${SRCROOT}/../Scripts/install.sh"
