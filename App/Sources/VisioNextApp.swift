@@ -10,8 +10,8 @@ struct VisioNextApp: App {
             MenuBarView(vm: vm)
         } label: {
             // Custom visio glyph: template (auto-tinted to the menu bar) normally,
-            // tinted red when a meeting with a link is imminent.
-            Image(nsImage: MenuBarIcon.image(imminent: vm.isImminent))
+            // tinted (and pulsing) when a meeting with a link is imminent.
+            Image(nsImage: MenuBarIcon.image(imminent: vm.isImminent, pulse: vm.pulse))
         }
         .menuBarExtraStyle(.window)
 
@@ -24,9 +24,18 @@ struct VisioNextApp: App {
 enum MenuBarIcon {
     private static let pointSize = NSSize(width: 18, height: 18)
 
-    static func image(imminent: Bool) -> NSImage {
+    /// Tint used for the "imminent" state. Swap to taste, e.g.:
+    /// `.systemRed`, `.systemOrange`, `.systemPink`, `.controlAccentColor`.
+    static let imminentColor: NSColor = .systemRed
+
+    /// Faintest opacity reached at the bottom of a pulse (1 = no fade).
+    private static let pulseMinOpacity: CGFloat = 0.35
+
+    /// - Parameter pulse: 0…1 phase from the view model; 1 = full intensity.
+    static func image(imminent: Bool, pulse: Double = 1) -> NSImage {
         let base = NSImage(named: "VisioIcon")
             ?? NSImage(systemSymbolName: "video", accessibilityDescription: "visio-next")!
+        let rect = NSRect(origin: .zero, size: pointSize)
 
         guard imminent else {
             let template = base.copy() as! NSImage
@@ -35,15 +44,21 @@ enum MenuBarIcon {
             return template
         }
 
-        // Draw the glyph filled with the alert color (non-template so the color shows).
-        let tinted = NSImage(size: pointSize)
-        tinted.lockFocus()
-        let rect = NSRect(origin: .zero, size: pointSize)
+        // Fully-tinted glyph (non-template so the color shows).
+        let solid = NSImage(size: pointSize)
+        solid.lockFocus()
         base.draw(in: rect)
-        NSColor.systemRed.set()
+        imminentColor.set()
         rect.fill(using: .sourceAtop)
-        tinted.unlockFocus()
-        tinted.isTemplate = false
-        return tinted
+        solid.unlockFocus()
+
+        // Composite it at the pulse opacity so the icon visibly breathes.
+        let opacity = pulseMinOpacity + (1 - pulseMinOpacity) * CGFloat(pulse)
+        let out = NSImage(size: pointSize)
+        out.lockFocus()
+        solid.draw(in: rect, from: rect, operation: .sourceOver, fraction: opacity)
+        out.unlockFocus()
+        out.isTemplate = false
+        return out
     }
 }
