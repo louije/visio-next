@@ -265,6 +265,7 @@ private struct MaskComb: NSViewRepresentable {
             field.isBezeled = true
             field.bezelStyle = .squareBezel
             field.usesSingleLineMode = true
+            field.placeholderString = "#"   // grayed marker = "random"
             field.translatesAutoresizingMaskIntoConstraints = false
             field.widthAnchor.constraint(equalToConstant: 28).isActive = true
             field.heightAnchor.constraint(equalToConstant: 30).isActive = true
@@ -299,8 +300,23 @@ private struct MaskComb: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextFieldDelegate {
         private let parent: MaskComb
         var fields: [NSTextField] = []
+        private var savedInsertionPointColor: NSColor?
 
         init(_ parent: MaskComb) { self.parent = parent }
+
+        // Hide the blinking caret while editing a comb cell — the focus ring already
+        // marks the active cell. Save/restore so only our cells are affected.
+        func controlTextDidBeginEditing(_ note: Notification) {
+            guard let editor = note.userInfo?["NSFieldEditor"] as? NSTextView else { return }
+            savedInsertionPointColor = editor.insertionPointColor
+            editor.insertionPointColor = .clear
+        }
+
+        func controlTextDidEndEditing(_ note: Notification) {
+            guard let editor = note.userInfo?["NSFieldEditor"] as? NSTextView,
+                  let saved = savedInsertionPointColor else { return }
+            editor.insertionPointColor = saved
+        }
 
         func controlTextDidChange(_ note: Notification) {
             guard let field = note.object as? NSTextField else { return }
