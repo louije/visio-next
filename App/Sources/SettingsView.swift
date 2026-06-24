@@ -257,7 +257,7 @@ private struct MaskComb: NSViewRepresentable {
         var posInGroup = 0
 
         for index in mask.indices {
-            let field = NSTextField()
+            let field = CombCell()
             field.tag = index
             field.delegate = context.coordinator
             field.alignment = .center
@@ -265,7 +265,10 @@ private struct MaskComb: NSViewRepresentable {
             field.isBezeled = true
             field.bezelStyle = .squareBezel
             field.usesSingleLineMode = true
-            field.placeholderString = "#"   // grayed marker = "random"
+            field.placeholderAttributedString = NSAttributedString(string: "#", attributes: [
+                .foregroundColor: NSColor.quaternaryLabelColor,   // faint marker = "random"
+                .font: NSFont.monospacedSystemFont(ofSize: 15, weight: .regular),
+            ])
             field.translatesAutoresizingMaskIntoConstraints = false
             field.widthAnchor.constraint(equalToConstant: 28).isActive = true
             field.heightAnchor.constraint(equalToConstant: 30).isActive = true
@@ -300,23 +303,8 @@ private struct MaskComb: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextFieldDelegate {
         private let parent: MaskComb
         var fields: [NSTextField] = []
-        private var savedInsertionPointColor: NSColor?
 
         init(_ parent: MaskComb) { self.parent = parent }
-
-        // Hide the blinking caret while editing a comb cell — the focus ring already
-        // marks the active cell. Save/restore so only our cells are affected.
-        func controlTextDidBeginEditing(_ note: Notification) {
-            guard let editor = note.userInfo?["NSFieldEditor"] as? NSTextView else { return }
-            savedInsertionPointColor = editor.insertionPointColor
-            editor.insertionPointColor = .clear
-        }
-
-        func controlTextDidEndEditing(_ note: Notification) {
-            guard let editor = note.userInfo?["NSFieldEditor"] as? NSTextView,
-                  let saved = savedInsertionPointColor else { return }
-            editor.insertionPointColor = saved
-        }
 
         func controlTextDidChange(_ note: Notification) {
             guard let field = note.object as? NSTextField else { return }
@@ -338,8 +326,10 @@ private struct MaskComb: NSViewRepresentable {
                 }
                 return true
             case #selector(NSResponder.moveLeft(_:)), #selector(NSResponder.insertBacktab(_:)):
+                guard i > 0 else { return false }   // first cell → let the system move focus out
                 focus(i - 1); return true
             case #selector(NSResponder.moveRight(_:)), #selector(NSResponder.insertTab(_:)):
+                guard i + 1 < fields.count else { return false }   // last cell → hand off to the system
                 focus(i + 1); return true
             default:
                 return false
@@ -358,6 +348,23 @@ private struct MaskComb: NSViewRepresentable {
             field.window?.makeFirstResponder(field)
             field.currentEditor()?.selectedRange = NSRange(location: 0, length: field.stringValue.count)
         }
+    }
+}
+
+/// A text field whose field editor draws no insertion-point caret — the focus ring
+/// is enough to mark the active comb cell.
+private final class CombCell: NSTextField {
+    override class var cellClass: AnyClass? {
+        get { CaretlessTextFieldCell.self }
+        set {}
+    }
+}
+
+private final class CaretlessTextFieldCell: NSTextFieldCell {
+    override func setUpFieldEditorAttributes(_ textObj: NSText) -> NSText {
+        let editor = super.setUpFieldEditorAttributes(textObj)
+        (editor as? NSTextView)?.insertionPointColor = .clear
+        return editor
     }
 }
 
