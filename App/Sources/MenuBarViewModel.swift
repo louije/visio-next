@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import EventKit
 import AppKit
+import WidgetKit
 import VisioCore
 
 @MainActor
@@ -72,6 +73,22 @@ final class MenuBarViewModel: ObservableObject {
                                               imminentThreshold: imminentThreshold)
         meetings = snapshot.joinable
         isImminent = snapshot.isImminent
+        await updateWidgetSnapshot()
+    }
+
+    /// Fetch the next call(s) over a broad horizon and publish them for the widget.
+    func updateWidgetSnapshot() async {
+        let now = Date()
+        var calls: [Meeting] = []
+        if access == .authorized {
+            let end = Calendar.current.date(byAdding: .day, value: 30, to: now) ?? now
+            let fetched = await service.meetings(in: DateInterval(start: now, end: end),
+                                                 selectedCalendarIDs: settings.selectedCalendarIDs,
+                                                 providers: settings.providers)
+            calls = MeetingSchedule.nextCalls(fetched, now: now)
+        }
+        WidgetSnapshot(meetings: calls, generatedAt: now).save(to: AppGroup.defaults)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func open(_ meeting: Meeting) {

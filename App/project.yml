@@ -22,6 +22,11 @@ targets:
         LSUIElement: true
         CFBundleDisplayName: visio-next
         NSCalendarsFullAccessUsageDescription: "visio-next reads your calendar to show upcoming meetings and their video links."
+    entitlements:
+      path: VisioNext.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.meidosem.visionext
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.meidosem.visionext
@@ -29,6 +34,7 @@ targets:
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "6.0"
+        DEVELOPMENT_TEAM: "684SSZLSSG"
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
 
