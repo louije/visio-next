@@ -265,9 +265,12 @@ private struct MaskComb: NSViewRepresentable {
             field.isBezeled = true
             field.bezelStyle = .squareBezel
             field.usesSingleLineMode = true
+            let centered = NSMutableParagraphStyle()
+            centered.alignment = .center
             field.placeholderAttributedString = NSAttributedString(string: "#", attributes: [
                 .foregroundColor: NSColor.quaternaryLabelColor,   // faint marker = "random"
                 .font: NSFont.monospacedSystemFont(ofSize: 15, weight: .regular),
+                .paragraphStyle: centered,
             ])
             field.translatesAutoresizingMaskIntoConstraints = false
             field.widthAnchor.constraint(equalToConstant: 28).isActive = true
