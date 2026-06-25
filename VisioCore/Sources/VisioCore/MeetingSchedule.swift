@@ -30,4 +30,16 @@ public enum MeetingSchedule {
             DaySection(date: day, meetings: groups[day]!.sorted { $0.start < $1.start })
         }
     }
+
+    /// The next upcoming call(s) with a link: the soonest one (including an ongoing
+    /// call), plus any others starting within `clusterWindow` of it, capped at `limit`.
+    public static func nextCalls(_ meetings: [Meeting], now: Date,
+                                 clusterWindow: TimeInterval = 600, limit: Int = 2) -> [Meeting] {
+        let upcoming = meetings
+            .filter { $0.joinURL != nil && $0.end > now }
+            .sorted { $0.start < $1.start }
+        guard let first = upcoming.first else { return [] }
+        let clustered = upcoming.filter { $0.start.timeIntervalSince(first.start) <= clusterWindow }
+        return Array(clustered.prefix(limit))
+    }
 }
