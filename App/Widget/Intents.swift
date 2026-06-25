@@ -42,8 +42,3 @@ struct JoinCallIntent: AppIntent {
         return .result()
     }
 }
-
-/// Encodes a call URL into an App Intents deep link so a widget `Link` runs `JoinCallIntent`.
-enum JoinIntentURL {
-    static func make(_ url: URL) -> URL { url }
-}

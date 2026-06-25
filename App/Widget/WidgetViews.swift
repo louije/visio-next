@@ -9,7 +9,8 @@ struct CallRow: View {
     let now: Date
 
     private var imminent: Bool {
-        MeetingSchedule.isImminent(meeting, now: now, threshold: 30 * 60)
+        // The joinable window (distinct from the menu icon's 5-minute imminent-tint threshold).
+        MeetingSchedule.isImminent(meeting, now: now, threshold: MeetingLoader.joinWindow)
     }
 
     var body: some View {

@@ -1,8 +1,7 @@
 import Foundation
 
-/// Storage location shared with the future widget. Until the App Group entitlement
-/// is added in Phase 2, `UserDefaults(suiteName:)` still returns a working,
-/// app-local suite, so Phase 1 functions unchanged.
+/// Storage location shared with the widget via the App Group entitlement
+/// (`group.com.meidosem.visionext`, configured in project.yml on both targets).
 enum AppGroup {
     static let suiteName = "group.com.meidosem.visionext"
 
