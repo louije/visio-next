@@ -44,14 +44,28 @@ private struct CalendarsSettings: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Cochez les calendriers à inclure. Rien de coché = tous.")
-                .font(.caption).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Cochez les calendriers à inclure. Rien de coché = tous.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button("Mes calendriers") { selectWritable() }
+                    .help("Sélectionne uniquement vos calendriers modifiables (pas les calendriers partagés en lecture seule).")
+            }
             List {
                 ForEach(bySource, id: \.source) { group in
-                    Section(group.source) {
+                    Section {
                         ForEach(group.calendars) { node in
                             Toggle(node.title, isOn: binding(for: node.id))
+                        }
+                    } header: {
+                        HStack {
+                            Text(group.source)
+                            Spacer()
+                            Button("Tout") { setGroup(group.calendars, included: true) }
+                                .buttonStyle(.borderless)
+                            Button("Aucun") { setGroup(group.calendars, included: false) }
+                                .buttonStyle(.borderless)
                         }
                     }
                 }
@@ -70,6 +84,19 @@ private struct CalendarsSettings: View {
                 persist()
             }
         )
+    }
+
+    private func setGroup(_ calendars: [CalendarNode], included: Bool) {
+        for node in calendars {
+            if included { settings.selectedCalendarIDs.insert(node.id) }
+            else { settings.selectedCalendarIDs.remove(node.id) }
+        }
+        persist()
+    }
+
+    private func selectWritable() {
+        settings.selectedCalendarIDs = Set(nodes.filter(\.isWritable).map(\.id))
+        persist()
     }
 
     private func persist() {

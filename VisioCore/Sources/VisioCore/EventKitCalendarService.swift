@@ -30,7 +30,10 @@ public final class EventKitCalendarService: EventProviding {
     public func calendars() -> [CalendarNode] {
         guard !isPreview else { return [] }
         return store.calendars(for: .event)
-            .map { CalendarNode(id: $0.calendarIdentifier, title: $0.title, sourceTitle: $0.source.title) }
+            .map {
+                CalendarNode(id: $0.calendarIdentifier, title: $0.title,
+                             sourceTitle: $0.source.title, isWritable: $0.allowsContentModifications)
+            }
             .sorted { ($0.sourceTitle, $0.title) < ($1.sourceTitle, $1.title) }
     }
 
