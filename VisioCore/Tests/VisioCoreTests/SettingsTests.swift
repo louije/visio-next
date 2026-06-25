@@ -21,6 +21,13 @@ private func freshDefaults() -> UserDefaults {
     #expect(Settings.load(from: d) == Settings())
 }
 
+@Test func isStoredReflectsWhetherSettingsWereSaved() {
+    let d = freshDefaults()
+    #expect(Settings.isStored(in: d) == false)
+    Settings().save(to: d)
+    #expect(Settings.isStored(in: d) == true)
+}
+
 @Test func saveThenLoadRoundTrips() {
     let d = freshDefaults()
     var s = Settings()

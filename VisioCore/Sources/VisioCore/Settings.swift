@@ -45,6 +45,11 @@ public struct Settings: Codable, Equatable, Sendable {
 public extension Settings {
     static let storageKey = "settings.v1"
 
+    /// Whether settings have ever been saved — used to detect first launch.
+    static func isStored(in defaults: UserDefaults) -> Bool {
+        defaults.data(forKey: storageKey) != nil
+    }
+
     static func load(from defaults: UserDefaults) -> Settings {
         guard let data = defaults.data(forKey: storageKey),
               let decoded = try? JSONDecoder().decode(Settings.self, from: data) else {

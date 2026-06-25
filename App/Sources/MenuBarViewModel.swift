@@ -42,6 +42,11 @@ final class MenuBarViewModel: ObservableObject {
             _ = await service.requestAccess()
             access = service.access()
         }
+        if access == .authorized, !VisioCore.Settings.isStored(in: AppGroup.defaults) {
+            // First launch: default to the user's own (writable) calendars rather than all.
+            settings.selectedCalendarIDs = Set(service.calendars().filter(\.isWritable).map(\.id))
+            settings.save(to: AppGroup.defaults)
+        }
         startAutoRefresh()
         await refresh()
     }
