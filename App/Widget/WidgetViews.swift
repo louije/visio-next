@@ -23,7 +23,9 @@ struct CallRow: View {
                 Text(meeting.start, format: .dateTime.hour().minute())
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             } else {
-                Text(relativeWhen).font(.caption2).foregroundStyle(.tertiary)
+                // Absolute weekday+time: doesn't go stale as the frozen entry date ages.
+                Text(meeting.start, format: .dateTime.weekday(.abbreviated).hour().minute())
+                    .font(.caption2).foregroundStyle(.tertiary)
             }
             if imminent, let url = meeting.joinURL {
                 Button(intent: JoinCallIntent(url: url)) {
@@ -32,12 +34,6 @@ struct CallRow: View {
                 .buttonStyle(.bordered)
             }
         }
-    }
-
-    private var relativeWhen: String {
-        let f = RelativeDateTimeFormatter()
-        f.unitsStyle = .short
-        return f.localizedString(for: meeting.start, relativeTo: now)
     }
 }
 
