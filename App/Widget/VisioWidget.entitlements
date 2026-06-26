@@ -8,5 +8,7 @@
 	<array>
 		<string>group.com.meidosem.visionext</string>
 	</array>
+	<key>com.apple.security.personal-information.calendars</key>
+	<true/>
 </dict>
 </plist>

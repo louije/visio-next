@@ -4,6 +4,12 @@ options:
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
+# Surface these in Xcode's navigator (not compiled). project.yml is the source of truth;
+# after editing it, run `xcodegen generate` to apply.
+fileGroups:
+  - project.yml
+  - VisioNext.entitlements
+  - Widget/VisioWidget.entitlements
 packages:
   VisioCore:
     path: ../VisioCore
@@ -22,12 +28,15 @@ targets:
       properties:
         LSUIElement: true
         CFBundleDisplayName: visio-next
-        NSCalendarsFullAccessUsageDescription: "visio-next reads your calendar to show upcoming meetings and their video links."
+        NSCalendarsFullAccessUsageDescription: "VisioNext observe les calendriers du système pour détecter les liens des prochaines réunions en ligne."
     entitlements:
       path: VisioNext.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.meidosem.visionext
+        # Required for EventKit under Hardened Runtime + provisioned (team) signing,
+        # otherwise requestFullAccessToEvents() is silently denied (no prompt).
+        com.apple.security.personal-information.calendars: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.meidosem.visionext
@@ -57,6 +66,7 @@ targets:
         com.apple.security.app-sandbox: true
         com.apple.security.application-groups:
           - group.com.meidosem.visionext
+        com.apple.security.personal-information.calendars: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.meidosem.visionext.widget

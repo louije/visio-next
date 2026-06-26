@@ -23,6 +23,6 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>visio-next reads your calendar to show upcoming meetings and their video links.</string>
+	<string>VisioNext observe les calendriers du système pour détecter les liens des prochaines réunions en ligne.</string>
 </dict>
 </plist>
