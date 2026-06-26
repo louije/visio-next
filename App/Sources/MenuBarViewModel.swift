@@ -14,7 +14,9 @@ final class MenuBarViewModel: ObservableObject {
     /// Chosen menu bar color for the imminent state.
     @Published var imminentColor: IconColor
 
-    let imminentThreshold: TimeInterval = 5 * 60
+    // Color the icon whenever a joinable call is in the menu (the ±join window),
+    // not just the last few minutes.
+    let imminentThreshold: TimeInterval = MeetingLoader.joinWindow
 
     private let service: EventProviding
     private var settings: VisioCore.Settings

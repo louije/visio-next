@@ -4,20 +4,8 @@ import SwiftUI
 @main
 struct VisioWidgetBundle: WidgetBundle {
     var body: some Widget {
-        NewCallWidget()
         NextCallWidget()
         CombinedWidget()
-    }
-}
-
-struct NewCallWidget: Widget {
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "VisioNewCall", provider: CallsProvider()) { _ in
-            NewCallView().containerBackground(.fill.tertiary, for: .widget)
-        }
-        .configurationDisplayName("Nouveau lien")
-        .description("Crée et copie un lien visio.")
-        .supportedFamilies([.systemSmall])
     }
 }
 

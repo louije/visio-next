@@ -41,26 +41,29 @@ struct CallRow: View {
     }
 }
 
-struct NewCallButton: View {
+/// Full-width tappable action bar at the bottom of the combined widget.
+struct NewLinkBar: View {
     var body: some View {
         Button(intent: NewCallIntent()) {
-            Label("Nouveau lien", systemImage: "link")
-                .font(.caption.weight(.semibold))
+            Label("Copier un lien de visio", systemImage: "link")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tint)
+                .frame(maxWidth: .infinity, minHeight: 38)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.plain)
+        .background(.tint.opacity(0.15))
     }
 }
 
 struct NextCallView: View {
     let entry: CallsEntry
     var body: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 6) {
             if entry.calls.isEmpty {
                 Text("Aucun appel à venir").font(.caption).foregroundStyle(.secondary)
             } else {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(entry.calls) { CallRow(meeting: $0, now: entry.date) }
-                }
+                ForEach(entry.calls) { CallRow(meeting: $0, now: entry.date) }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -68,21 +71,12 @@ struct NextCallView: View {
     }
 }
 
-struct NewCallView: View {
-    var body: some View {
-        VStack { NewCallButton() }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding()
-    }
-}
-
 struct CombinedView: View {
     let entry: CallsEntry
     var body: some View {
-        HStack(alignment: .top) {
+        VStack(spacing: 0) {
             NextCallView(entry: entry)
-            Divider()
-            NewCallView().frame(width: 120)
+            NewLinkBar()
         }
     }
 }

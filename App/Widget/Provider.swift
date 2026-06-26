@@ -23,7 +23,7 @@ struct CallsProvider: TimelineProvider {
     }
 
     private func entry() -> CallsEntry {
-        let calls = WidgetSnapshot.load(from: SharedStore.defaults)?.meetings ?? []
-        return CallsEntry(date: .now, calls: calls)
+        let snapshot = WidgetSnapshot.load(from: SharedStore.defaults)
+        return CallsEntry(date: .now, calls: snapshot?.meetings ?? [])
     }
 }
