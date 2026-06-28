@@ -2,6 +2,11 @@ import SwiftUI
 import WidgetKit
 import VisioCore
 
+struct CallsEntry: TimelineEntry {
+    let date: Date
+    let calls: [Meeting]
+}
+
 /// A single call row: title + time, dulled with a relative-date subhead when it isn't
 /// imminent (the join control is only offered when imminent).
 struct CallRow: View {

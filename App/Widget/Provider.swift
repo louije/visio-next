@@ -2,11 +2,6 @@ import WidgetKit
 import Foundation
 import VisioCore
 
-struct CallsEntry: TimelineEntry {
-    let date: Date
-    let calls: [Meeting]
-}
-
 struct CallsProvider: TimelineProvider {
     func placeholder(in context: Context) -> CallsEntry {
         CallsEntry(date: .now, calls: [])

@@ -20,6 +20,12 @@ targets:
     sources:
       - Sources
       - Resources
+      # Also compiled into the app so the widget views are previewable in the canvas
+      # (the VisioWidget extension target can't host previews on macOS). Preview with
+      # the VisioNext scheme selected.
+      - Widget/WidgetViews.swift
+      - Widget/Intents.swift
+      - Widget/SharedStore.swift
     dependencies:
       - package: VisioCore
       - target: VisioWidget
