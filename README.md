@@ -31,7 +31,44 @@ cd ../VisioCore && swift test
 To run the app: `open App/VisioNext.xcodeproj`, set your signing Team under
 Signing & Capabilities, then Run. Grant calendar access on first launch.
 
+## Install locally
+
+```sh
+Scripts/install.sh   # build, sign (Apple Development), install to ~/Applications, launch
+```
+
+Apple Development (automatic) signing is used here so the widget's App Group is
+provisioned and TCC (calendar access) sticks across rebuilds.
+
+## Releasing (auto-update via Sparkle)
+
+Releases are Developer ID-signed, notarized, EdDSA-signed for Sparkle, published
+as a GitHub Release, and advertised via an appcast on GitHub Pages.
+
+```sh
+Scripts/release.sh X.Y.Z
+```
+
+The script bumps the version in `project.yml`, archives + exports with automatic
+Developer ID provisioning (which also provisions the widget's App Group under
+Developer ID), notarizes and staples, then publishes the appcast and zip to the
+`gh-pages` branch and creates a GitHub Release. It preflights every prerequisite
+below and fails early with a clear message if one is missing.
+
+### One-time prerequisites
+
+- **Developer ID Application** certificate in the login keychain (team `684SSZLSSG`).
+- **notarytool keychain profile** named `visio-notary`:
+  `xcrun notarytool store-credentials visio-notary`
+  (Apple ID + app-specific password, or an App Store Connect API key).
+- **Sparkle EdDSA key** in the keychain (public key already in `Info.plist` via
+  `project.yml`'s `SUPublicEDKey`, generated once with Sparkle's `generate_keys`).
+  The private key never leaves your keychain and is never committed.
+- **`gh` CLI** authenticated (`gh auth status`).
+- **GitHub Pages** enabled on the `gh-pages` branch (root). It hosts `appcast.xml`
+  and every release zip; `SUFeedURL` is `https://louije.github.io/visio-next/appcast.xml`.
+
 ## Status
 
-Phase 1 (menu bar app) — implemented. Phase 2 (WidgetKit widget reading a shared
-App Group snapshot) — planned, see `docs/superpowers/plans/`.
+Stages 1–5 implemented: link generator, settings/quit, imminent color, WidgetKit
+widget, and Sparkle auto-update. See `docs/superpowers/plans/`.
