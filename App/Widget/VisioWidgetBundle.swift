@@ -17,6 +17,7 @@ struct NextCallWidget: Widget {
         .configurationDisplayName("Prochain appel")
         .description("Affiche le prochain appel visio.")
         .supportedFamilies([.systemSmall])
+        .contentMarginsDisabled()
     }
 }
 
@@ -28,5 +29,6 @@ struct CombinedWidget: Widget {
         .configurationDisplayName("Appels & nouveau lien")
         .description("Prochain appel et création de lien.")
         .supportedFamilies([.systemMedium])
+        .contentMarginsDisabled()
     }
 }

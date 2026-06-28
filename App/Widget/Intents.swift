@@ -1,9 +1,11 @@
 import AppIntents
 import AppKit
 import Foundation
+import WidgetKit
 import VisioCore
 
-/// Generates a link from the shared template and copies it to the pasteboard.
+/// Generates a link from the shared template and copies it to the pasteboard,
+/// then stamps the copy time so the widget can flash "Lien copié" briefly.
 struct NewCallIntent: AppIntent {
     static let title: LocalizedStringResource = "Créer un lien visio"
 
@@ -14,6 +16,8 @@ struct NewCallIntent: AppIntent {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(link, forType: .string)
+        SharedStore.defaults.set(Date.now, forKey: SharedStore.lastLinkCopiedKey)
+        WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
 }

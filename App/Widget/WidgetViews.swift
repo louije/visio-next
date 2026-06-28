@@ -6,6 +6,7 @@ struct CallsEntry: TimelineEntry {
     let date: Date
     let calls: [Meeting]
     var accent: IconColor = .red
+    var copied: Bool = false
 }
 
 /// Brand palette taken from the bicolor visio glyph — a blue/white/red app.
@@ -118,10 +119,14 @@ private struct JoinGlyph: View {
 }
 
 /// Full-width tappable action bar: deep red, white bold text (Fantastical-style).
+/// Flashes "Lien copié" for a couple seconds after a tap (driven by the timeline).
 struct NewLinkBar: View {
+    var copied: Bool = false
+
     var body: some View {
         Button(intent: NewCallIntent()) {
-            Label("Copier un lien de visio", systemImage: "link")
+            Label(copied ? "Lien copié" : "Copier un lien de visio",
+                  systemImage: copied ? "checkmark" : "link")
                 .font(.footnote.weight(.bold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 16)   // align label with the rows' text
@@ -161,7 +166,7 @@ struct CombinedView: View {
     var body: some View {
         VStack(spacing: 0) {
             NextCallView(entry: entry, compact: compact)
-            NewLinkBar()
+            NewLinkBar(copied: entry.copied)
         }
     }
 }
