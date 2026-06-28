@@ -13,6 +13,9 @@ fileGroups:
 packages:
   VisioCore:
     path: ../VisioCore
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.6.0"
 targets:
   VisioNext:
     type: application
@@ -28,6 +31,8 @@ targets:
       - Widget/SharedStore.swift
     dependencies:
       - package: VisioCore
+      - package: Sparkle
+        product: Sparkle
       - target: VisioWidget
     info:
       path: Info.plist
