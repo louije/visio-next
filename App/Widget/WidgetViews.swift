@@ -12,12 +12,12 @@ struct CallsEntry: TimelineEntry {
 
 /// Brand palette taken from the bicolor visio glyph — a blue/white/red app.
 enum BrandColor {
-    /// Deep gov navy (#000091) in light mode; a soft cool white in dark mode, where
-    /// the navy would vanish against the dark widget background.
+    /// Deep gov navy (#000091) in light mode; brightened in dark mode so it stays
+    /// legible on a dark widget background (mirrors the DSFR dark-theme blue).
     static let blue = Color(nsColor: NSColor(name: nil) { appearance in
         let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         return isDark
-            ? NSColor(red: 0.91, green: 0.93, blue: 1.0, alpha: 1)
+            ? NSColor(red: 0.45, green: 0.56, blue: 1.0, alpha: 1)
             : NSColor(red: 0, green: 0, blue: 145 / 255, alpha: 1)
     })
     static let red = Color(red: 201 / 255, green: 25 / 255, blue: 30 / 255)  // #C9191E
@@ -106,12 +106,15 @@ struct CallRow: View {
 /// A solid preference tints the (monochrome) service glyph. `bicolor` uses the native
 /// two-tone glyph for the gouv visio service, and visio blue for every other service.
 private struct JoinGlyph: View {
+    @Environment(\.colorScheme) private var colorScheme
     let providerName: String?
     let accent: IconColor
 
     var body: some View {
         let asset = ServiceIcons.assetName(for: providerName)
-        if accent == .bicolor, asset == "VisioIcon" {
+        // The two-tone glyph reads well on light backgrounds only; in dark mode fall
+        // back to the monochrome template tinted with the (adaptive) brand blue.
+        if accent == .bicolor, asset == "VisioIcon", colorScheme == .light {
             Image("VisioIconColor").resizable().scaledToFit()
         } else {
             image(for: asset)
