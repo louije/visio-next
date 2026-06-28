@@ -43,13 +43,13 @@ struct CallRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading) {
             Text(timeText)
                 .font(.callout.weight(.bold))
                 .foregroundStyle(imminent ? BrandColor.blue : .secondary)
                 .monospacedDigit()
 
-            HStack(alignment: .top, spacing: 6) {
+            HStack(alignment: (compact ? .top : .firstTextBaseline), spacing: 6) {
                 Text(meeting.title)
                     .font(.headline.weight(.bold))
                     .fixedSize(horizontal: false, vertical: true)   // wrap, never truncate
@@ -150,15 +150,17 @@ struct NextCallView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding()
+        .padding(12)
     }
 }
 
+/// Calls list with the "Nouveau lien" action bar pinned at the bottom (both sizes).
 struct CombinedView: View {
     let entry: CallsEntry
+    var compact: Bool = false
     var body: some View {
         VStack(spacing: 0) {
-            NextCallView(entry: entry, compact: false)
+            NextCallView(entry: entry, compact: compact)
             NewLinkBar()
         }
     }
@@ -172,39 +174,39 @@ struct CombinedView: View {
 private let previewNow = Date()
 
 private let previewImminent: [Meeting] = [
-    Meeting(id: "1", title: "Comité de suivi interministériel sur le numérique",
+    Meeting(id: "1", title: "Comité produit T3 2026",
             start: previewNow.addingTimeInterval(5 * 60), end: previewNow.addingTimeInterval(35 * 60),
             calendarName: "Pro", joinURL: URL(string: "https://visio.numerique.gouv.fr/pdi-azer-ljt"),
             providerName: "La Suite numérique"),
-    Meeting(id: "2", title: "Sync produit",
+    Meeting(id: "2", title: "Synchro produit",
             start: previewNow.addingTimeInterval(8 * 60), end: previewNow.addingTimeInterval(38 * 60),
             calendarName: "Pro", joinURL: URL(string: "https://zoom.us/j/123456"), providerName: "Zoom"),
 ]
 
 private let previewFar: [Meeting] = [
-    Meeting(id: "3", title: "Rétrospective trimestrielle",
+    Meeting(id: "3", title: "Rétro trimestrielle",
             start: previewNow.addingTimeInterval(3 * 86400), end: previewNow.addingTimeInterval(3 * 86400 + 1800),
             calendarName: "Pro", joinURL: URL(string: "https://meet.google.com/abc-defg-hij"),
             providerName: "Google Meet"),
 ]
 
 #Preview("Petit — imminent (bicolor)") {
-    NextCallView(entry: CallsEntry(date: previewNow, calls: previewImminent, accent: .bicolor), compact: true)
+    CombinedView(entry: CallsEntry(date: previewNow, calls: previewImminent, accent: .bicolor), compact: true)
         .frame(width: 170, height: 170).background(.background)
 }
 
 #Preview("Petit — imminent (bleu)") {
-    NextCallView(entry: CallsEntry(date: previewNow, calls: previewImminent, accent: .blue), compact: true)
+    CombinedView(entry: CallsEntry(date: previewNow, calls: previewImminent, accent: .blue), compact: true)
         .frame(width: 170, height: 170).background(.background)
 }
 
 #Preview("Petit — lointain") {
-    NextCallView(entry: CallsEntry(date: previewNow, calls: previewFar), compact: true)
+    CombinedView(entry: CallsEntry(date: previewNow, calls: previewFar), compact: true)
         .frame(width: 170, height: 170).background(.background)
 }
 
 #Preview("Petit — vide") {
-    NextCallView(entry: CallsEntry(date: previewNow, calls: []), compact: true)
+    CombinedView(entry: CallsEntry(date: previewNow, calls: []), compact: true)
         .frame(width: 170, height: 170).background(.background)
 }
 

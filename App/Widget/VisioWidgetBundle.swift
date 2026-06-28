@@ -12,7 +12,7 @@ struct VisioWidgetBundle: WidgetBundle {
 struct NextCallWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "VisioNextCall", provider: CallsProvider()) { entry in
-            NextCallView(entry: entry, compact: true).containerBackground(.fill.tertiary, for: .widget)
+            CombinedView(entry: entry, compact: true).containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Prochain appel")
         .description("Affiche le prochain appel visio.")
