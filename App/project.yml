@@ -58,6 +58,8 @@ targets:
     platform: macOS
     sources:
       - Widget
+      - Sources/ServiceIcons.swift   # shared: the menu's service-glyph icon
+      - Resources/Assets.xcassets     # shared: brand + service icon assets
     dependencies:
       - package: VisioCore
     info:

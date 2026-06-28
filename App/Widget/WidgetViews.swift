@@ -7,64 +7,94 @@ struct CallsEntry: TimelineEntry {
     let calls: [Meeting]
 }
 
-/// A single call row: title + time, dulled with a relative-date subhead when it isn't
-/// imminent (the join control is only offered when imminent).
+/// Brand palette taken from the bicolor visio glyph — a blue/white/red app.
+enum BrandColor {
+    static let blue = Color(red: 0, green: 0, blue: 145 / 255)        // #000091
+    static let red = Color(red: 201 / 255, green: 25 / 255, blue: 30 / 255)  // #C9191E
+}
+
+/// One call: time above the bold (wrapping) title, with the join control hstacked to
+/// the title — icon-only when compact (small widget), `[icon] Rejoindre` otherwise.
 struct CallRow: View {
     let meeting: Meeting
     let now: Date
-
-    private var imminent: Bool {
-        // The joinable window (distinct from the menu icon's 5-minute imminent-tint threshold).
-        MeetingSchedule.isImminent(meeting, now: now, threshold: MeetingLoader.joinWindow)
-    }
+    var compact: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(meeting.title)
-                .font(.subheadline.weight(.medium))
-                .lineLimit(1)
-                .foregroundStyle(imminent ? .primary : .secondary)
-            if imminent {
-                Text(meeting.start, format: .dateTime.hour().minute())
-                    .font(.caption).foregroundStyle(.secondary).monospacedDigit()
-            } else {
-                // Absolute weekday+time: doesn't go stale as the frozen entry date ages.
-                Text(meeting.start, format: .dateTime.weekday(.abbreviated).hour().minute())
-                    .font(.caption2).foregroundStyle(.tertiary)
-            }
-            if imminent, let url = meeting.joinURL {
-                Button(intent: JoinCallIntent(url: url)) {
-                    Text("Rejoindre").font(.caption.weight(.semibold))
+        VStack(alignment: .leading, spacing: 2) {
+            Text(timeText)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(BrandColor.blue)
+                .monospacedDigit()
+
+            HStack(alignment: .top, spacing: 6) {
+                Text(meeting.title)
+                    .font(.subheadline.weight(.bold))
+                    .fixedSize(horizontal: false, vertical: true)   // wrap, never truncate
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if let url = meeting.joinURL {
+                    joinControl(url)
                 }
-                .buttonStyle(.bordered)
             }
         }
     }
+
+    @ViewBuilder private func joinControl(_ url: URL) -> some View {
+        if compact {
+            Button(intent: JoinCallIntent(url: url)) {
+                ServiceIcon(providerName: meeting.providerName, hasLink: true)
+                    .padding(3)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        } else {
+            Button(intent: JoinCallIntent(url: url)) {
+                HStack(spacing: 5) {
+                    ServiceIcon(providerName: meeting.providerName, hasLink: true)
+                    Text("Rejoindre").font(.caption.weight(.semibold))
+                }
+            }
+            .buttonStyle(.bordered)
+            .tint(BrandColor.blue)
+        }
+    }
+
+    /// "HH:mm – HH:mm" today, prefixed with the weekday on other days (non-stale, absolute).
+    private var timeText: String {
+        let time = Date.FormatStyle.dateTime.hour().minute()
+        let span = "\(meeting.start.formatted(time)) – \(meeting.end.formatted(time))"
+        if Calendar.current.isDateInToday(meeting.start) { return span }
+        return "\(meeting.start.formatted(.dateTime.weekday(.abbreviated))) \(span)"
+    }
 }
 
-/// Full-width tappable action bar at the bottom of the combined widget.
+/// Full-width tappable action bar: deep red, white bold text (Fantastical-style).
 struct NewLinkBar: View {
     var body: some View {
         Button(intent: NewCallIntent()) {
             Label("Copier un lien de visio", systemImage: "link")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.tint)
-                .frame(maxWidth: .infinity, minHeight: 38)
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 30)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(.tint.opacity(0.15))
+        .background(BrandColor.red)
     }
 }
 
 struct NextCallView: View {
     let entry: CallsEntry
+    var compact: Bool = false
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 12) {
             if entry.calls.isEmpty {
-                Text("Aucun appel à venir").font(.caption).foregroundStyle(.secondary)
+                Text("Aucun appel à venir")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
             } else {
-                ForEach(entry.calls) { CallRow(meeting: $0, now: entry.date) }
+                ForEach(entry.calls) { CallRow(meeting: $0, now: entry.date, compact: compact) }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -76,7 +106,7 @@ struct CombinedView: View {
     let entry: CallsEntry
     var body: some View {
         VStack(spacing: 0) {
-            NextCallView(entry: entry)
+            NextCallView(entry: entry, compact: false)
             NewLinkBar()
         }
     }
@@ -84,13 +114,13 @@ struct CombinedView: View {
 
 // MARK: - Previews
 // Plain SwiftUI view previews at widget point-sizes (the `#Preview(as:timeline:)` widget
-// form isn't hostable on this platform — "does not support previewing widgets").
+// form isn't hostable on this platform). Preview with the VisioNext scheme selected.
 
 #if DEBUG
 private let previewNow = Date()
 
 private let previewImminent: [Meeting] = [
-    Meeting(id: "1", title: "Comité de suivi interministériel",
+    Meeting(id: "1", title: "Comité de suivi interministériel sur le numérique",
             start: previewNow.addingTimeInterval(5 * 60), end: previewNow.addingTimeInterval(35 * 60),
             calendarName: "Pro", joinURL: URL(string: "https://visio.numerique.gouv.fr/pdi-azer-ljt"),
             providerName: "La Suite numérique"),
@@ -106,23 +136,23 @@ private let previewFar: [Meeting] = [
             providerName: "Google Meet"),
 ]
 
-#Preview("Prochain appel — imminent") {
-    NextCallView(entry: CallsEntry(date: previewNow, calls: previewImminent))
-        .frame(width: 170, height: 170).background(.fill.quaternary)
+#Preview("Petit — imminent") {
+    NextCallView(entry: CallsEntry(date: previewNow, calls: previewImminent), compact: true)
+        .frame(width: 170, height: 170).background(.background)
 }
 
-#Preview("Prochain appel — lointain") {
-    NextCallView(entry: CallsEntry(date: previewNow, calls: previewFar))
-        .frame(width: 170, height: 170).background(.fill.quaternary)
+#Preview("Petit — lointain") {
+    NextCallView(entry: CallsEntry(date: previewNow, calls: previewFar), compact: true)
+        .frame(width: 170, height: 170).background(.background)
 }
 
-#Preview("Prochain appel — vide") {
-    NextCallView(entry: CallsEntry(date: previewNow, calls: []))
-        .frame(width: 170, height: 170).background(.fill.quaternary)
+#Preview("Petit — vide") {
+    NextCallView(entry: CallsEntry(date: previewNow, calls: []), compact: true)
+        .frame(width: 170, height: 170).background(.background)
 }
 
-#Preview("Combiné") {
+#Preview("Moyen — combiné") {
     CombinedView(entry: CallsEntry(date: previewNow, calls: previewImminent))
-        .frame(width: 364, height: 170).background(.fill.quaternary)
+        .frame(width: 364, height: 170).background(.background)
 }
 #endif
