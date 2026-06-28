@@ -206,7 +206,7 @@ private struct GeneralSettings: View {
             Divider()
             HStack {
                 Spacer()
-                Button("Quitter visio-next") { NSApplication.shared.terminate(nil) }
+                Button("Quitter VisioNext") { NSApplication.shared.terminate(nil) }
             }
             .padding()
         }

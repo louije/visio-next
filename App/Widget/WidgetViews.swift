@@ -43,13 +43,13 @@ struct CallRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(timeText)
                 .font(.callout.weight(.bold))
                 .foregroundStyle(imminent ? BrandColor.blue : .secondary)
                 .monospacedDigit()
 
-            HStack(alignment: (compact ? .top : .firstTextBaseline), spacing: 6) {
+            HStack(alignment: (compact ? .center : .firstTextBaseline), spacing: 6) {
                 Text(meeting.title)
                     .font(.headline.weight(.bold))
                     .fixedSize(horizontal: false, vertical: true)   // wrap, never truncate
@@ -66,7 +66,7 @@ struct CallRow: View {
         if compact {
             Button(intent: JoinCallIntent(url: url)) {
                 JoinGlyph(providerName: meeting.providerName, accent: accent)
-                    .frame(width: 26, height: 26)
+                    .frame(width: 24)
                     .padding(2)
                     .contentShape(Rectangle())
             }
