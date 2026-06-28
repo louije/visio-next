@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import WidgetKit
 import VisioCore
 
@@ -11,7 +12,14 @@ struct CallsEntry: TimelineEntry {
 
 /// Brand palette taken from the bicolor visio glyph — a blue/white/red app.
 enum BrandColor {
-    static let blue = Color(red: 0, green: 0, blue: 145 / 255)        // #000091
+    /// Deep gov navy (#000091) in light mode; a soft cool white in dark mode, where
+    /// the navy would vanish against the dark widget background.
+    static let blue = Color(nsColor: NSColor(name: nil) { appearance in
+        let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        return isDark
+            ? NSColor(red: 0.91, green: 0.93, blue: 1.0, alpha: 1)
+            : NSColor(red: 0, green: 0, blue: 145 / 255, alpha: 1)
+    })
     static let red = Color(red: 201 / 255, green: 25 / 255, blue: 30 / 255)  // #C9191E
 }
 
@@ -219,5 +227,11 @@ private let previewFar: [Meeting] = [
 #Preview("Moyen — combiné") {
     CombinedView(entry: CallsEntry(date: previewNow, calls: previewImminent, accent: .bicolor))
         .frame(width: 364, height: 170).background(.background)
+}
+
+#Preview("Moyen — combiné (sombre)") {
+    CombinedView(entry: CallsEntry(date: previewNow, calls: previewImminent, accent: .bicolor))
+        .frame(width: 364, height: 170).background(.background)
+        .environment(\.colorScheme, .dark)
 }
 #endif
