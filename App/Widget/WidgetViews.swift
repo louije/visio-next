@@ -65,17 +65,19 @@ struct CallRow: View {
     @ViewBuilder private func joinControl(_ url: URL) -> some View {
         if compact {
             Button(intent: JoinCallIntent(url: url)) {
-                Image(systemName: "video.fill")
-                    .font(.title3)
-                    .foregroundStyle(accent.color)
-                    .padding(3)
+                JoinGlyph(providerName: meeting.providerName, accent: accent)
+                    .frame(width: 26, height: 26)
+                    .padding(2)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         } else {
             Button(intent: JoinCallIntent(url: url)) {
-                Label("Rejoindre", systemImage: "video.fill")
-                    .font(.callout.weight(.semibold))
+                HStack(spacing: 5) {
+                    JoinGlyph(providerName: meeting.providerName, accent: accent)
+                        .frame(width: 16, height: 16)
+                    Text("Rejoindre").font(.callout.weight(.semibold))
+                }
             }
             .buttonStyle(.bordered)
             .tint(accent.color)
@@ -88,6 +90,30 @@ struct CallRow: View {
         let span = "\(meeting.start.formatted(time)) – \(meeting.end.formatted(time))"
         if Calendar.current.isDateInToday(meeting.start) { return span }
         return "\(meeting.start.formatted(.dateTime.weekday(.abbreviated))) \(span)"
+    }
+}
+
+/// The per-service glyph for the join control, colored by the user's accent preference.
+/// A solid preference tints the (monochrome) service glyph. `bicolor` uses the native
+/// two-tone glyph for the gouv visio service, and visio blue for every other service.
+private struct JoinGlyph: View {
+    let providerName: String?
+    let accent: IconColor
+
+    var body: some View {
+        let asset = ServiceIcons.assetName(for: providerName)
+        if accent == .bicolor, asset == "VisioIcon" {
+            Image("VisioIconColor").resizable().scaledToFit()
+        } else {
+            image(for: asset)
+                .resizable().scaledToFit()
+                .foregroundStyle(accent == .bicolor ? BrandColor.blue : accent.color)
+        }
+    }
+
+    private func image(for asset: String?) -> Image {
+        if let asset { return Image(asset).renderingMode(.template) }
+        return Image(systemName: "video.fill")   // generic fallback (Teams, Whereby, custom)
     }
 }
 
@@ -162,8 +188,13 @@ private let previewFar: [Meeting] = [
             providerName: "Google Meet"),
 ]
 
-#Preview("Petit — imminent") {
-    NextCallView(entry: CallsEntry(date: previewNow, calls: previewImminent), compact: true)
+#Preview("Petit — imminent (bicolor)") {
+    NextCallView(entry: CallsEntry(date: previewNow, calls: previewImminent, accent: .bicolor), compact: true)
+        .frame(width: 170, height: 170).background(.background)
+}
+
+#Preview("Petit — imminent (bleu)") {
+    NextCallView(entry: CallsEntry(date: previewNow, calls: previewImminent, accent: .blue), compact: true)
         .frame(width: 170, height: 170).background(.background)
 }
 
@@ -178,7 +209,7 @@ private let previewFar: [Meeting] = [
 }
 
 #Preview("Moyen — combiné") {
-    CombinedView(entry: CallsEntry(date: previewNow, calls: previewImminent))
+    CombinedView(entry: CallsEntry(date: previewNow, calls: previewImminent, accent: .bicolor))
         .frame(width: 364, height: 170).background(.background)
 }
 #endif
