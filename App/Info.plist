@@ -17,12 +17,18 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>VisioNext observe les calendriers du système pour détecter les liens des prochaines réunions en ligne.</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://louije.github.io/visio-next/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>7Ni3ph6l4ZQkluhi/JSVyriytlQRc9DaP6arRwYHDdo=</string>
 </dict>
 </plist>

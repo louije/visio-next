@@ -40,6 +40,14 @@ targets:
         LSUIElement: true
         CFBundleDisplayName: visio-next
         NSCalendarsFullAccessUsageDescription: "VisioNext observe les calendriers du système pour détecter les liens des prochaines réunions en ligne."
+        # Tie the bundle version to the build settings so Sparkle sees real versions
+        # (XcodeGen otherwise hardcodes 1.0 / 1).
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        # Sparkle
+        SUFeedURL: "https://louije.github.io/visio-next/appcast.xml"
+        SUPublicEDKey: "7Ni3ph6l4ZQkluhi/JSVyriytlQRc9DaP6arRwYHDdo="
+        SUEnableAutomaticChecks: true
     entitlements:
       path: VisioNext.entitlements
       properties:
