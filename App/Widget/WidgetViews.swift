@@ -5,6 +5,7 @@ import VisioCore
 struct CallsEntry: TimelineEntry {
     let date: Date
     let calls: [Meeting]
+    var accent: IconColor = .red
 }
 
 /// Brand palette taken from the bicolor visio glyph — a blue/white/red app.
@@ -13,26 +14,48 @@ enum BrandColor {
     static let red = Color(red: 201 / 255, green: 25 / 255, blue: 30 / 255)  // #C9191E
 }
 
+extension IconColor {
+    /// The user's chosen accent as a SwiftUI color (for the join control).
+    var color: Color {
+        switch self {
+        case .white: return .white
+        case .red: return .red
+        case .orange: return .orange
+        case .pink: return Color(red: 1, green: 0.18, blue: 0.60)
+        case .green: return .green
+        case .blue: return .blue
+        case .bicolor: return BrandColor.blue
+        }
+    }
+}
+
 /// One call: time above the bold (wrapping) title, with the join control hstacked to
 /// the title — icon-only when compact (small widget), `[icon] Rejoindre` otherwise.
 struct CallRow: View {
     let meeting: Meeting
     let now: Date
     var compact: Bool = false
+    var accent: IconColor = .red
+
+    /// Within the join window → joinable now; otherwise it's a far call (dimmed, no join).
+    private var imminent: Bool {
+        MeetingSchedule.isImminent(meeting, now: now, threshold: MeetingLoader.joinWindow)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(timeText)
-                .font(.caption.weight(.bold))
-                .foregroundStyle(BrandColor.blue)
+                .font(.callout.weight(.bold))
+                .foregroundStyle(imminent ? BrandColor.blue : .secondary)
                 .monospacedDigit()
 
             HStack(alignment: .top, spacing: 6) {
                 Text(meeting.title)
-                    .font(.subheadline.weight(.bold))
+                    .font(.headline.weight(.bold))
                     .fixedSize(horizontal: false, vertical: true)   // wrap, never truncate
                     .frame(maxWidth: .infinity, alignment: .leading)
-                if let url = meeting.joinURL {
+                    .foregroundStyle(imminent ? .primary : .secondary)
+                if imminent, let url = meeting.joinURL {
                     joinControl(url)
                 }
             }
@@ -42,20 +65,20 @@ struct CallRow: View {
     @ViewBuilder private func joinControl(_ url: URL) -> some View {
         if compact {
             Button(intent: JoinCallIntent(url: url)) {
-                ServiceIcon(providerName: meeting.providerName, hasLink: true)
+                Image(systemName: "video.fill")
+                    .font(.title3)
+                    .foregroundStyle(accent.color)
                     .padding(3)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         } else {
             Button(intent: JoinCallIntent(url: url)) {
-                HStack(spacing: 5) {
-                    ServiceIcon(providerName: meeting.providerName, hasLink: true)
-                    Text("Rejoindre").font(.caption.weight(.semibold))
-                }
+                Label("Rejoindre", systemImage: "video.fill")
+                    .font(.callout.weight(.semibold))
             }
             .buttonStyle(.bordered)
-            .tint(BrandColor.blue)
+            .tint(accent.color)
         }
     }
 
@@ -75,7 +98,8 @@ struct NewLinkBar: View {
             Label("Copier un lien de visio", systemImage: "link")
                 .font(.footnote.weight(.bold))
                 .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: 30)
+                .padding(.horizontal, 16)   // align label with the rows' text
+                .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -94,7 +118,9 @@ struct NextCallView: View {
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(entry.calls) { CallRow(meeting: $0, now: entry.date, compact: compact) }
+                ForEach(entry.calls) {
+                    CallRow(meeting: $0, now: entry.date, compact: compact, accent: entry.accent)
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

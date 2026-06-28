@@ -19,6 +19,7 @@ struct CallsProvider: TimelineProvider {
 
     private func entry() -> CallsEntry {
         let snapshot = WidgetSnapshot.load(from: SharedStore.defaults)
-        return CallsEntry(date: .now, calls: snapshot?.meetings ?? [])
+        let accent = Settings.load(from: SharedStore.defaults).imminentColor
+        return CallsEntry(date: .now, calls: snapshot?.meetings ?? [], accent: accent)
     }
 }
