@@ -5,6 +5,7 @@ import VisioCore
 @main
 struct VisioNextApp: App {
     @StateObject private var vm = MenuBarViewModel()
+    @StateObject private var updater = UpdaterViewModel()
 
     var body: some Scene {
         MenuBarExtra {
@@ -17,7 +18,7 @@ struct VisioNextApp: App {
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsView { vm.reloadSettings() }
+            SettingsView(updater: updater) { vm.reloadSettings() }
         }
     }
 }

@@ -3,6 +3,7 @@ import AppKit
 import VisioCore
 
 struct SettingsView: View {
+    @ObservedObject var updater: UpdaterViewModel
     var onChange: () -> Void
     @State private var tab: Tab = .general
 
@@ -10,7 +11,7 @@ struct SettingsView: View {
 
     var body: some View {
         TabView(selection: $tab) {
-            GeneralSettings(onChange: onChange)
+            GeneralSettings(updater: updater, onChange: onChange)
                 .tabItem { Label("Général", systemImage: "gearshape") }
                 .tag(Tab.general)
             CalendarsSettings(onChange: onChange)
@@ -27,7 +28,7 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView(onChange: {})
+    SettingsView(updater: UpdaterViewModel(), onChange: {})
 }
 
 // MARK: - Calendars
@@ -159,6 +160,7 @@ private struct ProvidersSettings: View {
 // MARK: - General
 
 private struct GeneralSettings: View {
+    @ObservedObject var updater: UpdaterViewModel
     var onChange: () -> Void
     @State private var settings = VisioCore.Settings.load(from: AppGroup.defaults)
     private let browsers = LinkOpener.installedBrowsers()
@@ -205,6 +207,8 @@ private struct GeneralSettings: View {
 
             Divider()
             HStack {
+                Button("Rechercher les mises à jour…") { updater.checkForUpdates() }
+                    .disabled(!updater.canCheckForUpdates)
                 Spacer()
                 Button("Quitter VisioNext") { NSApplication.shared.terminate(nil) }
             }
