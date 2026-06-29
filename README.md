@@ -4,6 +4,13 @@ A macOS menu bar app that lists your upcoming calendar meetings (via EventKit) a
 one-click-joins their video links. Calendar data comes from the accounts already
 configured in macOS Calendar.app — no credentials are stored by this app.
 
+## Download
+
+[**Download the latest release**](https://github.com/louije/visio-next/releases/latest)
+— unzip and move `VisioNext.app` to `/Applications` (or `~/Applications`). It's
+Developer ID-signed and notarized, so it opens without Gatekeeper warnings. After
+the first install, updates are automatic via Sparkle.
+
 ## Layout
 
 - `VisioCore/` — SwiftPM package with all the (tested) domain logic.
