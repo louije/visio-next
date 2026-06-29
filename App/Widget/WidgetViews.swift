@@ -133,12 +133,11 @@ private struct JoinGlyph: View {
 /// Flashes "Lien copié" for a couple seconds after a tap (driven by the timeline).
 struct NewLinkBar: View {
     var copied: Bool = false
-    var compact: Bool = false
 
     var body: some View {
         Button(intent: NewCallIntent()) {
-            Label(copied ? "Lien copié" : (compact ? "Copier lien visio" : "Copier un lien de visio"),
-                  systemImage: copied ? "checkmark" : "link")
+            Label(copied ? "Lien copié" : "Nouveau lien visio",
+                  systemImage: copied ? "checkmark" : "plus")
                 .font(.footnote.weight(.bold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 16)   // align label with the rows' text
@@ -178,7 +177,7 @@ struct CombinedView: View {
     var body: some View {
         VStack(spacing: 0) {
             NextCallView(entry: entry, compact: compact)
-            NewLinkBar(copied: entry.copied, compact: compact)
+            NewLinkBar(copied: entry.copied)
         }
     }
 }
