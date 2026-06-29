@@ -3,6 +3,19 @@
     <channel>
         <title>VisioNext</title>
         <item>
+            <title>0.2.3</title>
+            <pubDate>Mon, 29 Jun 2026 15:57:58 +0200</pubDate>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>0.2.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://louije.github.io/visio-next/VisioNext-0.2.3.zip" length="3687222" type="application/octet-stream" sparkle:edSignature="oMedhwnnHq9yD+3qcPXHQL1513Bv1VpqXoNRLIB+akSfSyptpjA/ikFHVpAuqMQP0JJbnNrsENMJltF6Aj/ECQ=="/>
+            <sparkle:deltas>
+                <enclosure url="https://louije.github.io/visio-next/VisioNext5-4.delta" sparkle:deltaFrom="4" length="44802" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="Nwubp+A8Qz1fKXf3t/j+yS/nQ7Zo/rsAMX3GWO+EDSIUTiolVu3JOFb+GWfd6vrkuwX8q+Oggl3B53UyVSndDQ=="/>
+                <enclosure url="https://louije.github.io/visio-next/VisioNext5-3.delta" sparkle:deltaFrom="3" length="44234" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="aIwslFa2iESObluqwLZBO9uUeZUh7O9WxTv/Sn0TdT1bP9eutxrPxQvrTk6mPIE7yqaq+3/wbuIPJNzbOL8hDQ=="/>
+                <enclosure url="https://louije.github.io/visio-next/VisioNext5-2.delta" sparkle:deltaFrom="2" length="1230326" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="dfY4exndAcvNtZlCqWPPB4ajQV7yWRNd7U3RtXC9k1550ppHyHTX0uV4zx36uw2cTCZe9H4qFWxFHnzimqRDAw=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>0.2.2</title>
             <pubDate>Mon, 29 Jun 2026 13:20:42 +0200</pubDate>
             <sparkle:version>4</sparkle:version>
@@ -24,14 +37,6 @@
             <sparkle:deltas>
                 <enclosure url="https://louije.github.io/visio-next/VisioNext3-2.delta" sparkle:deltaFrom="2" length="1200446" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="NEbHirqXfM0YbWrlPeCCxYQ5FzQLsbL/GpLamEiA5JfGVC4AcZ3yAIn7Hj9UxO07a7X7ilff3Q663SzjIkF2Bw=="/>
             </sparkle:deltas>
-        </item>
-        <item>
-            <title>0.2.0</title>
-            <pubDate>Mon, 29 Jun 2026 11:28:45 +0200</pubDate>
-            <sparkle:version>2</sparkle:version>
-            <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://louije.github.io/visio-next/VisioNext-0.2.0.zip" length="1720724" type="application/octet-stream" sparkle:edSignature="OBLQJcQNISluiodZzVmao6KVbkjmek9pidlpr9WBjAtAAtHHhsxu56E7OFlOVeJfa0f46grqQwAzkIFVv55JBA=="/>
         </item>
     </channel>
 </rss>
