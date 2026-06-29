@@ -132,20 +132,31 @@ private struct JoinGlyph: View {
 /// Full-width tappable action bar: deep red, white bold text (Fantastical-style).
 /// Flashes "Lien copié" for a couple seconds after a tap (driven by the timeline).
 struct NewLinkBar: View {
+    @Environment(\.widgetRenderingMode) private var renderingMode
     var copied: Bool = false
+
+    /// Desktop transparent / monochrome widgets (`.vibrant` / `.accented`) flatten
+    /// custom colors, so the red fill + white text would vanish.
+    private var fullColor: Bool { renderingMode == .fullColor }
 
     var body: some View {
         Button(intent: NewCallIntent()) {
             Label(copied ? "Lien copié" : "Nouveau lien visio",
                   systemImage: copied ? "checkmark" : "plus")
                 .font(.footnote.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(fullColor ? Color.white : Color.primary)
                 .padding(.horizontal, 16)   // align label with the rows' text
                 .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .background(BrandColor.red)
+        .background {
+            if fullColor {
+                BrandColor.red
+            } else {
+                Color.primary.opacity(0.12)   // legible tinted bar in transparent/mono modes
+            }
+        }
     }
 }
 
