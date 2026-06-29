@@ -1,8 +1,17 @@
-# visio-next
+<div align="center">
+  <img src="docs/icon.png" width="128" alt="VisioNext app icon">
+  <h1>VisioNext</h1>
+</div>
 
 A macOS menu bar app that lists your upcoming calendar meetings (via EventKit) and
-one-click-joins their video links. Calendar data comes from the accounts already
-configured in macOS Calendar.app — no credentials are stored by this app.
+one-click-joins their video links — including the French government
+**[visio.numerique.gouv.fr](https://visio.numerique.gouv.fr)** service (La Suite
+numérique), plus Zoom, Google Meet, Teams, Jitsi, Webex, and BigBlueButton.
+Calendar data comes from the accounts already configured in macOS Calendar.app —
+no credentials are stored by this app.
+
+> [!IMPORTANT]
+> LLM Disclosure: This project was developed with the assistance of large language models (AI coding tools).
 
 ## Download
 
@@ -75,7 +84,10 @@ below and fails early with a clear message if one is missing.
 - **GitHub Pages** enabled on the `gh-pages` branch (root). It hosts `appcast.xml`
   and every release zip; `SUFeedURL` is `https://louije.github.io/visio-next/appcast.xml`.
 
+<!--
 ## Status
 
 Stages 1–5 implemented: link generator, settings/quit, imminent color, WidgetKit
-widget, and Sparkle auto-update. See `docs/superpowers/plans/`.
+widget, and Sparkle auto-update.
+-->
+
