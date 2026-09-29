@@ -120,9 +120,9 @@ targets:
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
         SKIP_INSTALL: YES
-  # Safari Web Extension that injects the multi-column Meet strip stylesheet.
-  # Its web assets (manifest.json, enhance.css) are the shared ../web-extension
-  # source — the same files used, unpacked, as the Chrome extension.
+  # Safari Web Extension: the adaptive Meet strip + the global-mute call bridge.
+  # Its web assets are the shared ../web-extension source — the same files used,
+  # unpacked, as the Chrome extension. Joins the App Group to reach the app's socket.
   VisioSafariExtension:
     type: app-extension
     platform: macOS
@@ -143,11 +143,18 @@ targets:
       - path: ../web-extension/popup.js
         type: file
         buildPhase: resources
+      - path: ../web-extension/call-bridge.js
+        type: file
+        buildPhase: resources
+      - path: ../web-extension/background.js
+        type: file
+        buildPhase: resources
       - path: ../web-extension/icons
         type: folder
         buildPhase: resources
     dependencies:
       - sdk: SafariServices.framework
+      - package: VisioCore
     info:
       path: SafariExtension/Info.plist
       properties:
@@ -162,6 +169,8 @@ targets:
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
+        com.apple.security.application-groups:
+          - group.com.meidosem.visionext
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.meidosem.visionext.safari
