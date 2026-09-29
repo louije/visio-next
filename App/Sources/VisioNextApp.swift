@@ -6,6 +6,7 @@ import VisioCore
 struct VisioNextApp: App {
     @StateObject private var vm = MenuBarViewModel()
     @StateObject private var updater = UpdaterViewModel()
+    @StateObject private var bridge = CallBridge()
 
     var body: some Scene {
         MenuBarExtra {
