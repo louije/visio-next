@@ -48,6 +48,12 @@ rm -rf "$DEST"
 cp -R "$APP_BUILT" "$DEST"
 xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
 
+# Forget the build product so only the installed copy is known to LaunchServices:
+# Safari lists the extension of every VisioNext.app it knows, and the app's
+# SFSafariApplication.dispatchMessage only reaches the copy bundled with itself.
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+  -u "$APP_BUILT" 2>/dev/null || true
+
 codesign --verify --strict "$DEST" && echo "Signature OK"
 echo "Installed: $DEST"
 
