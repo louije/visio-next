@@ -1,0 +1,5 @@
+#!/bin/sh
+# Native-messaging host for the VisioNext browser extension (Chrome, Chromium
+# browsers, Firefox). A byte pipe: the browser's length-prefixed JSON on stdio goes
+# to the app's socket and back unchanged. Registered by NativeHostInstaller.swift.
+exec /usr/bin/nc -U "$(/usr/bin/getconf DARWIN_USER_TEMP_DIR)visionext-bridge.sock"

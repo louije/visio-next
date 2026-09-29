@@ -41,6 +41,7 @@ final class CallBridge: ObservableObject {
     private var expiryTimer: Timer?
 
     init() {
+        NativeHostInstaller.install()
         if let path = Self.safariSocketPath { listen(at: path, safari: true) }
         listen(at: Self.pipeSocketPath, safari: false)
         expiryTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
