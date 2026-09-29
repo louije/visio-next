@@ -6,7 +6,8 @@ import VisioCore
 
 /// The app's end of the browser bridge. Listens on two Unix sockets (one per kind of
 /// extension transport, served with BSD sockets via `UnixSocketServer`: `NWListener` drops
-/// Unix clients that write and close at once, as Safari's one-shot client does), keeps the live `CallSessions`, and sends mute commands back.
+/// Unix clients that write and close at once, as Safari's one-shot client does), keeps the
+/// live `CallSessions`, and sends mute commands back.
 ///
 /// - Safari: its sandboxed extension handler connects to `bridge.sock` in the App Group
 ///   container, one short connection per message. Commands go back through

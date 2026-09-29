@@ -48,6 +48,7 @@ final class UnixSocketServer {
         guard bound == 0 else { return fail("bind", fd: fd) }
         guard listen(fd, 16) == 0 else { return fail("listen", fd: fd) }
         guard fcntl(fd, F_SETFL, O_NONBLOCK) == 0 else { return fail("fcntl", fd: fd) }
+        _ = fcntl(fd, F_SETFD, FD_CLOEXEC)
 
         let source = DispatchSource.makeReadSource(fileDescriptor: fd, queue: .main)
         source.setEventHandler { [weak self] in
@@ -63,10 +64,26 @@ final class UnixSocketServer {
     private func acceptPending(on listener: Int32) {
         while true {
             let client = accept(listener, nil, nil)
-            if client < 0 { return }   // EAGAIN: drained (or a transient error)
+            if client < 0 {
+                switch errno {
+                case EINTR, ECONNABORTED:
+                    continue
+                case EAGAIN, EWOULDBLOCK:
+                    return   // drained
+                default:
+                    let code = errno
+                    log.error("accept \(self.path, privacy: .public): \(code) \(String(cString: strerror(code)), privacy: .public)")
+                    // Back off so a persistent error can't spin the main thread.
+                    guard let source else { return }
+                    source.suspend()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { source.resume() }
+                    return
+                }
+            }
             var on: Int32 = 1
             setsockopt(client, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
-            onAccept(UnixSocketConnection(fd: client))
+            _ = fcntl(client, F_SETFD, FD_CLOEXEC)
+            onAccept(UnixSocketConnection(fd: client, log: log))
         }
     }
 
@@ -89,8 +106,12 @@ final class UnixSocketServer {
     }
 }
 
-/// One accepted connection. The fd stays blocking (frames are tiny); reads are driven by a
-/// dispatch source so `read` only runs when data is ready.
+/// One accepted connection. Accepted fds inherit O_NONBLOCK from the listener, so a peer that
+/// stops draining is dropped (write hits EAGAIN, then close) rather than blocking main. Reads
+/// are driven by a dispatch source so `read` only runs when data is ready.
+///
+/// An open connection keeps itself alive (its read source captures `self` strongly, like
+/// NWConnection) until `close()` breaks the cycle.
 @MainActor
 final class UnixSocketConnection {
     var onData: ((Data) -> Void)?
@@ -98,16 +119,25 @@ final class UnixSocketConnection {
 
     private var source: DispatchSourceRead?
     private var fd: Int32
+    private let log: Logger
 
-    init(fd: Int32) {
+    init(fd: Int32, log: Logger) {
         self.fd = fd
+        self.log = log
         let source = DispatchSource.makeReadSource(fileDescriptor: fd, queue: .main)
-        source.setEventHandler { [weak self] in
-            MainActor.assumeIsolated { self?.readable() }
+        // Deliberate retain cycle: the connection lives until closed; `close()` cancels the
+        // source and sets `source = nil`, releasing this handler and with it `self`.
+        source.setEventHandler {
+            MainActor.assumeIsolated { self.readable() }
         }
         source.setCancelHandler { Darwin.close(fd) }
         self.source = source
         source.resume()
+    }
+
+    isolated deinit {
+        // Safety net: cancelling closes the fd via the cancel handler.
+        source?.cancel()
     }
 
     private func readable() {
@@ -132,6 +162,9 @@ final class UnixSocketConnection {
             } else if written < 0 && errno == EINTR {
                 continue
             } else {
+                if written < 0 && (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    log.error("write: peer not draining, dropping connection")
+                }
                 close()
                 return
             }
