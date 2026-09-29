@@ -30,3 +30,21 @@ private func sessions(_ states: [(muted: Bool, canUnmute: Bool)]) -> CallSession
 @Test func severalMutedCallsDoNothing() {
     #expect(MutePolicy.command(for: sessions([(true, true), (true, true)])) == nil)
 }
+
+@Test func stateWithNoCallsIsNil() {
+    #expect(MutePolicy.state(for: CallSessions()) == nil)
+}
+
+@Test func stateCountsCallsWhenMuting() {
+    #expect(MutePolicy.state(for: sessions([(false, true)])) == .mute(calls: 1))
+    #expect(MutePolicy.state(for: sessions([(true, true), (false, true)])) == .mute(calls: 2))
+}
+
+@Test func stateForASingleMutedCall() {
+    #expect(MutePolicy.state(for: sessions([(true, true)])) == .unmute(CallSessions.Key(channel: .safari, tabId: 0)))
+    #expect(MutePolicy.state(for: sessions([(true, false)])) == .unmuteNotAllowed)
+}
+
+@Test func stateForSeveralMutedCalls() {
+    #expect(MutePolicy.state(for: sessions([(true, true), (true, false)])) == .cannotUnmuteSeveral(calls: 2))
+}
