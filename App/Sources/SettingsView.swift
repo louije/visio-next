@@ -22,7 +22,7 @@ struct SettingsView: View {
                 .tabItem { Label("Services visio", systemImage: "video") }
                 .tag(Tab.providers)
         }
-        .frame(width: 480, height: 400)
+        .frame(width: 480, height: 450)
         // Always show Général when the window opens (don't restore the last tab).
         .onAppear { tab = .general }
     }
