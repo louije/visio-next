@@ -39,6 +39,7 @@ final class CallBridge: ObservableObject {
     private var pipes: [Int: UnixSocketConnection] = [:]
     private var nextPipe = 0
     private var expiryTimer: Timer?
+    private var micInterceptor: MicClickInterceptor?
 
     init() {
         NativeHostInstaller.install()
@@ -60,6 +61,14 @@ final class CallBridge: ObservableObject {
             return
         }
         send(command)
+    }
+
+    /// Called once MenuBarExtraAccess hands us the status item.
+    func attach(statusItem: NSStatusItem) {
+        guard micInterceptor == nil else { return }
+        micInterceptor = MicClickInterceptor(statusItem: statusItem,
+                                             isActive: { [weak self] in self?.sessions.isInCall ?? false },
+                                             onMicClick: { [weak self] in self?.toggleMute() })
     }
 
     func send(_ command: MuteCommand) {
