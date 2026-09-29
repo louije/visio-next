@@ -19,7 +19,17 @@ import KeyboardShortcuts
 ///   container: since macOS 15 a process outside the group touching it gets a prompt.
 @MainActor
 final class CallBridge: ObservableObject {
-    @Published private(set) var sessions = CallSessions()
+    @Published private(set) var sessions = CallSessions() {
+        didSet { updateMic() }
+    }
+
+    /// The "hot" color (Réglages → Général), for the live mic. Set by the app.
+    var micColor: IconColor = .red {
+        didSet { updateMic() }
+    }
+
+    /// Where the calls stand: drives the menu item and the mic's tooltip. nil = no call.
+    var muteState: MuteState? { MutePolicy.state(for: sessions) }
 
     static let safariExtensionID = "com.meidosem.visionext.safari"
 
@@ -39,7 +49,7 @@ final class CallBridge: ObservableObject {
     private var pipes: [Int: UnixSocketConnection] = [:]
     private var nextPipe = 0
     private var expiryTimer: Timer?
-    private var micInterceptor: MicClickInterceptor?
+    private var mic: MicStatusItem?
 
     init() {
         NativeHostInstaller.install()
@@ -50,6 +60,14 @@ final class CallBridge: ObservableObject {
         }
         KeyboardShortcuts.onKeyUp(for: .toggleMute) { [weak self] in
             MainActor.assumeIsolated { self?.toggleMute() }
+        }
+        // After MenuBarExtra has created its status item, so the mic lands right next to it.
+        DispatchQueue.main.async { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.mic = MicStatusItem { [weak self] in self?.toggleMute() }
+                self.updateMic()
+            }
         }
         log.info("bridge started")
     }
@@ -63,12 +81,8 @@ final class CallBridge: ObservableObject {
         send(command)
     }
 
-    /// Called once MenuBarExtraAccess hands us the status item.
-    func attach(statusItem: NSStatusItem) {
-        guard micInterceptor == nil else { return }
-        micInterceptor = MicClickInterceptor(statusItem: statusItem,
-                                             isActive: { [weak self] in self?.sessions.isInCall ?? false },
-                                             onMicClick: { [weak self] in self?.toggleMute() })
+    private func updateMic() {
+        mic?.update(state: muteState, indicator: sessions.indicator, color: micColor)
     }
 
     func send(_ command: MuteCommand) {

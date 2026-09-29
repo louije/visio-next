@@ -1,13 +1,19 @@
 import SwiftUI
 import AppKit
 import VisioCore
+import KeyboardShortcuts
 
 struct MenuBarView: View {
     @ObservedObject var vm: MenuBarViewModel
+    @ObservedObject var bridge: CallBridge
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if let state = bridge.muteState {
+                MuteRow(state: state) { bridge.toggleMute() }
+                Divider()
+            }
             content
             Divider()
             footer
@@ -78,6 +84,48 @@ struct MenuBarView: View {
     }
 }
 
+/// The global mute, as a menu item: what it will do, and the shortcut on the right.
+/// Disabled when there's nothing it can do (several muted calls, unmute not allowed).
+struct MuteRow: View {
+    let state: MuteState
+    let action: () -> Void
+    @State private var hovering = false
+
+    private var highlighted: Bool { hovering && state.isActionable }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: state.isMute ? "mic.slash" : "mic")
+                    .frame(width: 16)
+                Text(state.title)
+                Spacer()
+                if let shortcut = KeyboardShortcuts.getShortcut(for: .toggleMute) {
+                    Text(shortcut.description)
+                        .opacity(highlighted ? 1 : 0.5)
+                }
+            }
+            .foregroundStyle(highlighted ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .contentShape(Rectangle())
+            .background(RoundedRectangle(cornerRadius: 5).fill(highlighted ? Color.accentColor : .clear))
+        }
+        .buttonStyle(.plain)
+        .disabled(!state.isActionable)
+        .opacity(state.isActionable ? 1 : 0.5)
+        .onHover { hovering = $0 }
+        .padding(6)
+    }
+}
+
+private extension MuteState {
+    var isMute: Bool {
+        if case .mute = self { return true }
+        return false
+    }
+}
+
 struct MeetingRow: View {
     let meeting: Meeting
     let onJoin: (Meeting) -> Void
@@ -121,7 +169,7 @@ struct MeetingRow: View {
 }
 
 #Preview("Menu bar popover") {
-    MenuBarView(vm: MenuBarViewModel(service: PreviewEventService()))
+    MenuBarView(vm: MenuBarViewModel(service: PreviewEventService()), bridge: CallBridge())
 }
 
 /// A canned `EventProviding` so the full `MenuBarView` renders in the canvas without
