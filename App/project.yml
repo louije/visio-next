@@ -62,9 +62,10 @@ targets:
       properties:
         LSUIElement: true
         CFBundleDisplayName: VisioNext
-        # Declare French so macOS runs the app (and Sparkle's dialogs) in French.
+        # Declare only French so macOS runs the app (and its libraries: Sparkle,
+        # KeyboardShortcuts) in French even when the system prefers English.
         CFBundleDevelopmentRegion: fr
-        CFBundleLocalizations: [fr, en]
+        CFBundleLocalizations: [fr]
         NSCalendarsFullAccessUsageDescription: "VisioNext observe les calendriers du système pour détecter les liens des prochaines réunions en ligne."
         # Tie the bundle version to the build settings so Sparkle sees real versions
         # (XcodeGen otherwise hardcodes 1.0 / 1).
