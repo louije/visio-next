@@ -1,12 +1,12 @@
 import Foundation
 import AppKit
-import Network
 import SafariServices
 import os
 import VisioCore
 
 /// The app's end of the browser bridge. Listens on two Unix sockets (one per kind of
-/// extension transport), keeps the live `CallSessions`, and sends mute commands back.
+/// extension transport, served with BSD sockets via `UnixSocketServer`: `NWListener` drops
+/// Unix clients that write and close at once, as Safari's one-shot client does), keeps the live `CallSessions`, and sends mute commands back.
 ///
 /// - Safari: its sandboxed extension handler connects to `bridge.sock` in the App Group
 ///   container, one short connection per message. Commands go back through
@@ -33,8 +33,8 @@ final class CallBridge: ObservableObject {
     }
 
     private let log = Logger(subsystem: "com.meidosem.visionext", category: "bridge")
-    private var listeners: [NWListener] = []
-    private var pipes: [Int: NWConnection] = [:]
+    private var servers: [UnixSocketServer] = []
+    private var pipes: [Int: UnixSocketConnection] = [:]
     private var nextPipe = 0
     private var expiryTimer: Timer?
 
@@ -44,6 +44,7 @@ final class CallBridge: ObservableObject {
         expiryTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.sessions.expire(now: Date()) }
         }
+        log.info("bridge started")
     }
 
     /// The hotkey / menu bar action.
@@ -60,9 +61,12 @@ final class CallBridge: ObservableObject {
         // A mute goes everywhere; an unmute only down its one session's channel.
         let frame = BridgeFrame.encode(command.json)
         for (id, connection) in pipes where command.channel == nil || command.channel == .pipe(id) {
-            connection.send(content: frame, completion: .idempotent)
+            connection.write(frame)
         }
-        let toSafari = command.channel.map { $0 == .safari } ?? sessions.channels.contains(.safari)
+        var toSafari = command.channel.map { $0 == .safari } ?? sessions.channels.contains(.safari)
+        if command.channel == nil {
+            toSafari = toSafari && !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Safari").isEmpty
+        }
         if toSafari {
             SFSafariApplication.dispatchMessage(withName: "setMuted",
                                                 toExtensionWithIdentifier: Self.safariExtensionID,
@@ -75,25 +79,13 @@ final class CallBridge: ObservableObject {
     // MARK: - Sockets
 
     private func listen(at path: String, safari: Bool) {
-        unlink(path)   // stale socket from a previous run
-        let parameters = NWParameters.tcp   // TCP options are ignored on a Unix endpoint
-        parameters.requiredLocalEndpoint = .unix(path: path)
-        do {
-            let listener = try NWListener(using: parameters)
-            listener.newConnectionHandler = { [weak self] connection in
-                MainActor.assumeIsolated { self?.accept(connection, safari: safari) }
-            }
-            listener.stateUpdateHandler = { [log] state in
-                log.debug("listener \(path, privacy: .public): \(String(describing: state), privacy: .public)")
-            }
-            listener.start(queue: .main)
-            listeners.append(listener)
-        } catch {
-            log.error("listen \(path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        let server = UnixSocketServer(path: path, log: log) { [weak self] connection in
+            self?.accept(connection, safari: safari)
         }
+        if server.start() { servers.append(server) }
     }
 
-    private func accept(_ connection: NWConnection, safari: Bool) {
+    private func accept(_ connection: UnixSocketConnection, safari: Bool) {
         let channel: Channel
         if safari {
             channel = .safari
@@ -102,46 +94,28 @@ final class CallBridge: ObservableObject {
             channel = .pipe(nextPipe)
             pipes[nextPipe] = connection
         }
-        connection.stateUpdateHandler = { [weak self] state in
-            switch state {
-            case .failed, .cancelled:
-                MainActor.assumeIsolated { self?.closed(channel) }
-            default:
-                break
+        log.debug("accept \(String(describing: channel), privacy: .public)")
+        var decoder = BridgeFrame.Decoder()
+        connection.onData = { [weak self, weak connection] data in
+            guard let self else { return }
+            let messages: [Data]
+            do {
+                messages = try decoder.feed(data)
+            } catch {
+                self.log.error("drop \(String(describing: channel), privacy: .public): \(String(describing: error), privacy: .public)")
+                connection?.close()
+                return
+            }
+            for json in messages {
+                guard let message = BridgeMessage(json: json) else {
+                    self.log.debug("unrecognized \(String(decoding: json, as: UTF8.self), privacy: .public)")
+                    continue
+                }
+                self.log.debug("recv \(String(describing: channel), privacy: .public) \(String(describing: message), privacy: .public)")
+                self.sessions.apply(message, from: channel, at: Date())
             }
         }
-        connection.start(queue: .main)
-        receive(on: connection, channel: channel, decoder: BridgeFrame.Decoder())
-    }
-
-    private func receive(on connection: NWConnection, channel: Channel, decoder: BridgeFrame.Decoder) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { [weak self] data, _, isComplete, error in
-            MainActor.assumeIsolated {
-                guard let self else { return }
-                var decoder = decoder
-                let messages: [Data]
-                do {
-                    messages = try data.map { try decoder.feed($0) } ?? []
-                } catch {
-                    self.log.error("drop \(String(describing: channel), privacy: .public): \(String(describing: error), privacy: .public)")
-                    connection.cancel()
-                    return
-                }
-                for json in messages {
-                    guard let message = BridgeMessage(json: json) else {
-                        self.log.debug("unrecognized \(String(decoding: json, as: UTF8.self), privacy: .public)")
-                        continue
-                    }
-                    self.log.debug("recv \(String(describing: channel), privacy: .public) \(String(describing: message), privacy: .public)")
-                    self.sessions.apply(message, from: channel, at: Date())
-                }
-                if isComplete || error != nil {
-                    connection.cancel()
-                } else {
-                    self.receive(on: connection, channel: channel, decoder: decoder)
-                }
-            }
-        }
+        connection.onClose = { [weak self] in self?.closed(channel) }
     }
 
     private func closed(_ channel: Channel) {
