@@ -14,19 +14,24 @@
 
 const api = globalThis.browser ?? globalThis.chrome;
 const HOST = 'com.meidosem.visionext';
-const sessions = new Map(); // tabId -> { muted, canUnmute }
+const VISIO_TABS = { url: 'https://visio.numerique.gouv.fr/*' };
+const sessions = new Map(); // tabId -> { muted, canUnmute }; only drives the port lifecycle
 let port = null;
 
-function onAppMessage(raw) {
+function tell(tabId, value) {
+  Promise.resolve(api.tabs.sendMessage(tabId, { type: 'setMuted', value })).catch(() => {});
+}
+
+async function onAppMessage(raw) {
   const msg = (raw && raw.userInfo) || raw;
   if (!msg || msg.type !== 'setMuted') return;
   // An unmute names its one tab (the app only unmutes when it knows exactly which
-  // call); a mute goes to every call.
-  const targets = msg.tabId != null ? [msg.tabId] : [...sessions.keys()];
-  for (const tabId of targets) {
-    if (!sessions.has(tabId)) continue;
-    Promise.resolve(api.tabs.sendMessage(tabId, { type: 'setMuted', value: msg.value })).catch(() => {});
-  }
+  // call). A mute goes to every Visio tab, not just the registry: the background may
+  // have been unloaded and restarted since the last heartbeat. Tabs not in a call
+  // ignore it (call-bridge.js).
+  if (msg.tabId != null) return tell(msg.tabId, msg.value);
+  const tabs = await api.tabs.query(VISIO_TABS);
+  for (const tab of tabs) tell(tab.id, msg.value);
 }
 
 function ensurePort() {

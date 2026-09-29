@@ -18,6 +18,7 @@
     "128": "icons/icon-128.png"
   },
   "permissions": ["storage", "nativeMessaging"],
+  "host_permissions": ["https://visio.numerique.gouv.fr/*"],
   "background": {
     "service_worker": "background.js",
     "scripts": ["background.js"]
