@@ -29,9 +29,11 @@ async function onAppMessage(raw) {
   // call). A mute goes to every Visio tab, not just the registry: the background may
   // have been unloaded and restarted since the last heartbeat. Tabs not in a call
   // ignore it (call-bridge.js).
-  if (msg.tabId != null) return tell(msg.tabId, msg.value);
-  const tabs = await api.tabs.query(VISIO_TABS);
-  for (const tab of tabs) tell(tab.id, msg.value);
+  try {
+    if (msg.tabId != null) return tell(msg.tabId, msg.value);
+    const tabs = await api.tabs.query(VISIO_TABS);
+    for (const tab of tabs) tell(tab.id, msg.value);
+  } catch (e) { /* tab gone or query failed */ }
 }
 
 function ensurePort() {
