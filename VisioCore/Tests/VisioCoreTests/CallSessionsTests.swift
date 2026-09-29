@@ -57,3 +57,10 @@ private let t0 = Date(timeIntervalSince1970: 1_000_000)
     s.apply(.state(tabId: 9, muted: false, canUnmute: true), from: .pipe(3), at: t0)
     #expect(s.channels == [.safari, .pipe(3)])
 }
+
+@Test func expiryBoundaryKeepsSessionExactlyTimeoutOld() {
+    var s = CallSessions()
+    s.apply(.state(tabId: 1, muted: false, canUnmute: true), from: .safari, at: t0)
+    s.expire(now: t0.addingTimeInterval(CallSessions.timeout))
+    #expect(s.sessions.count == 1)
+}

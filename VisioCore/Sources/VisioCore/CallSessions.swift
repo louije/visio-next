@@ -7,6 +7,7 @@ public enum Channel: Hashable, Sendable {
     case pipe(Int)
 }
 
+/// One tab's last reported mute state and when we last heard from it.
 public struct CallSession: Equatable, Sendable {
     public var muted: Bool
     public var canUnmute: Bool
@@ -42,11 +43,13 @@ public struct CallSessions: Equatable, Sendable {
     }
 
     public mutating func drop(channel: Channel) {
-        sessions = sessions.filter { $0.key.channel != channel }
+        let kept = sessions.filter { $0.key.channel != channel }
+        if kept.count != sessions.count { sessions = kept }
     }
 
     public mutating func expire(now: Date) {
-        sessions = sessions.filter { now.timeIntervalSince($0.value.lastSeen) <= Self.timeout }
+        let kept = sessions.filter { now.timeIntervalSince($0.value.lastSeen) <= Self.timeout }
+        if kept.count != sessions.count { sessions = kept }
     }
 
     public var isInCall: Bool { !sessions.isEmpty }

@@ -21,9 +21,18 @@ private func object(_ data: Data) -> [String: Any] {
     #expect(m["allowed_origins"] == nil)
 }
 
-@Test func manifestOutputIsStable() {
-    // Same input → same bytes, so the installer can skip rewriting unchanged files.
-    let a = NativeHostManifest.chromium(path: "/A", extensionIDs: ["abc"])
-    let b = NativeHostManifest.chromium(path: "/A", extensionIDs: ["abc"])
-    #expect(a == b)
+@Test func chromiumManifestGolden() {
+    let expected = """
+    {
+      "allowed_origins" : [
+        "chrome-extension://abc/"
+      ],
+      "description" : "VisioNext bridge",
+      "name" : "com.meidosem.visionext",
+      "path" : "/A",
+      "type" : "stdio"
+    }
+    """
+    let actual = NativeHostManifest.chromium(path: "/A", extensionIDs: ["abc"])
+    #expect(String(decoding: actual, as: UTF8.self) == expected)
 }

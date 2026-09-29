@@ -22,7 +22,14 @@ import Foundation
     #expect(BridgeMessage(json: Data("not json".utf8)) == nil)
 }
 
-@Test func muteCommandJSON() {
-    #expect(String(decoding: MuteCommand.setMuted(true).json, as: UTF8.self) == #"{"type":"setMuted","value":true}"#)
-    #expect(String(decoding: MuteCommand.setMuted(false).json, as: UTF8.self) == #"{"type":"setMuted","value":false}"#)
+@Test func muteCommandWireForms() {
+    let key = CallSessions.Key(channel: .pipe(2), tabId: 5)
+    #expect(String(decoding: MuteCommand.muteAll.json, as: UTF8.self) == #"{"type":"setMuted","value":true}"#)
+    #expect(String(decoding: MuteCommand.unmute(key).json, as: UTF8.self) == #"{"type":"setMuted","value":false,"tabId":5}"#)
+    #expect(MuteCommand.muteAll.channel == nil)
+    #expect(MuteCommand.unmute(key).channel == .pipe(2))
+    let all = MuteCommand.muteAll.userInfo
+    #expect(all["type"] as? String == "setMuted" && all["value"] as? Bool == true && all["tabId"] == nil)
+    let one = MuteCommand.unmute(key).userInfo
+    #expect(one["type"] as? String == "setMuted" && one["value"] as? Bool == false && one["tabId"] as? Int == 5)
 }

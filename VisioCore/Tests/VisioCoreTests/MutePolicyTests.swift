@@ -15,12 +15,12 @@ private func sessions(_ states: [(muted: Bool, canUnmute: Bool)]) -> CallSession
 }
 
 @Test func anyLiveCallMutesAll() {
-    #expect(MutePolicy.command(for: sessions([(false, true)])) == .setMuted(true))
-    #expect(MutePolicy.command(for: sessions([(true, true), (false, true)])) == .setMuted(true))
+    #expect(MutePolicy.command(for: sessions([(false, true)])) == .muteAll)
+    #expect(MutePolicy.command(for: sessions([(true, true), (false, true)])) == .muteAll)
 }
 
 @Test func singleMutedCallUnmutes() {
-    #expect(MutePolicy.command(for: sessions([(true, true)])) == .setMuted(false))
+    #expect(MutePolicy.command(for: sessions([(true, true)])) == .unmute(CallSessions.Key(channel: .safari, tabId: 0)))
 }
 
 @Test func singleMutedCallThatCannotUnmuteDoesNothing() {

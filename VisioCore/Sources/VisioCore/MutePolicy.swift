@@ -2,10 +2,10 @@
 /// direction; unmuting only happens when there's no doubt which call it's for.
 public enum MutePolicy {
     public static func command(for sessions: CallSessions) -> MuteCommand? {
-        let all = Array(sessions.sessions.values)
+        let all = sessions.sessions
         if all.isEmpty { return nil }
-        if all.contains(where: { !$0.muted }) { return .setMuted(true) }
-        if all.count == 1, all[0].canUnmute { return .setMuted(false) }
+        if all.values.contains(where: { !$0.muted }) { return .muteAll }
+        if all.count == 1, let (key, session) = all.first, session.canUnmute { return .unmute(key) }
         return nil
     }
 }

@@ -18,7 +18,8 @@ public enum NativeHostManifest {
     }
 
     private static func encode(_ object: [String: Any]) -> Data {
-        (try? JSONSerialization.data(withJSONObject: object,
-                                     options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])) ?? Data()
+        // These inputs (strings and string arrays) are always valid JSON.
+        try! JSONSerialization.data(withJSONObject: object,
+                                    options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
     }
 }

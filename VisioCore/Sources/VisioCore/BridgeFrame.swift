@@ -4,6 +4,13 @@ import Foundation
 /// many bytes of UTF-8 JSON. It's the format Chrome and Firefox native messaging use on
 /// stdio, so their host can be a plain byte pipe to our socket.
 public enum BridgeFrame {
+    /// Largest frame body we accept (1 MiB); a bigger header means a broken or hostile peer.
+    public static let maxLength = 1 << 20
+
+    public enum DecodeError: Error, Equatable {
+        case frameTooLong(Int)
+    }
+
     public static func encode(_ json: Data) -> Data {
         let n = UInt32(json.count)
         var out = Data([UInt8(n & 0xFF), UInt8(n >> 8 & 0xFF), UInt8(n >> 16 & 0xFF), UInt8(n >> 24 & 0xFF)])
@@ -17,11 +24,12 @@ public enum BridgeFrame {
 
         public init() {}
 
-        public mutating func feed(_ bytes: Data) -> [Data] {
+        public mutating func feed(_ bytes: Data) throws -> [Data] {
             buffer.append(contentsOf: bytes)
             var messages: [Data] = []
             while buffer.count >= 4 {
                 let length = Int(buffer[0]) | Int(buffer[1]) << 8 | Int(buffer[2]) << 16 | Int(buffer[3]) << 24
+                if length > BridgeFrame.maxLength { throw DecodeError.frameTooLong(length) }
                 guard buffer.count >= 4 + length else { break }
                 messages.append(Data(buffer[4 ..< 4 + length]))
                 buffer.removeFirst(4 + length)
