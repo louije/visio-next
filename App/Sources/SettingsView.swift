@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import VisioCore
+import KeyboardShortcuts
 
 struct SettingsView: View {
     @ObservedObject var updater: UpdaterViewModel
@@ -178,6 +179,8 @@ private struct GeneralSettings: View {
                         Text(browser.name).tag(String?.some(browser.bundleID))
                     }
                 }
+
+                KeyboardShortcuts.Recorder("Couper le micro (toutes les visios)", name: .toggleMute)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Couleur (appel imminent)")

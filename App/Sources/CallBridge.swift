@@ -3,6 +3,7 @@ import AppKit
 import SafariServices
 import os
 import VisioCore
+import KeyboardShortcuts
 
 /// The app's end of the browser bridge. Listens on two Unix sockets (one per kind of
 /// extension transport, served with BSD sockets via `UnixSocketServer`: `NWListener` drops
@@ -44,6 +45,9 @@ final class CallBridge: ObservableObject {
         listen(at: Self.pipeSocketPath, safari: false)
         expiryTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.sessions.expire(now: Date()) }
+        }
+        KeyboardShortcuts.onKeyUp(for: .toggleMute) { [weak self] in
+            MainActor.assumeIsolated { self?.toggleMute() }
         }
         log.info("bridge started")
     }
@@ -125,4 +129,9 @@ final class CallBridge: ObservableObject {
         pipes[id] = nil
         sessions.drop(channel: channel)
     }
+}
+
+extension KeyboardShortcuts.Name {
+    /// No default: the user picks it in Réglages → Général.
+    static let toggleMute = Self("toggleMute")
 }
