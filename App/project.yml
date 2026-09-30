@@ -153,6 +153,9 @@ targets:
       - path: ../web-extension/icons
         type: folder
         buildPhase: resources
+      - path: ../web-extension/providers
+        type: folder
+        buildPhase: resources
     dependencies:
       - sdk: SafariServices.framework
       - package: VisioCore
