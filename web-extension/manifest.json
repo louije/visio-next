@@ -35,7 +35,7 @@
     {
       "matches": ["https://visio.numerique.gouv.fr/*"],
       "css": ["enhance.css"],
-      "js": ["layout-engine.js", "call-bridge.js"],
+      "js": ["layout-engine.js", "providers/visio.js", "call-bridge.js"],
       "run_at": "document_idle",
       "all_frames": false
     }
