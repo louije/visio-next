@@ -61,6 +61,9 @@ Auto-update is automatic once published.
 - **Host access to `visio.numerique.gouv.fr`** — the extension injects a stylesheet
   and a small layout script into the call page to rearrange the participant strip.
   It runs nowhere else.
+- **`nativeMessaging`** — talks to the companion VisioNext macOS app so its global
+  shortcut can mute your microphone in every open call at once. Only each call's mute
+  state and a mute command are exchanged, locally; nothing leaves the machine.
 - **`scripting`** — runs the mute bridge on Google Meet / Teams only after you allow
   those sites from the popup, including tabs already open.
 - **Optional access to meet.google.com, teams.microsoft.com, teams.cloud.microsoft,
@@ -69,8 +72,12 @@ Auto-update is automatic once published.
 
 ## Data collection
 
-None. No analytics, no network requests, no accounts. The only stored value is the
-on/off preference in local extension storage.
+None. No analytics, no network requests, no accounts. Stored: the on/off preference in
+local extension storage. Exchanged locally with the VisioNext app (if installed): each
+call tab's (Visio, and Google Meet / Teams if allowed) microphone mute state.
+
+After publishing, add the store-assigned id to `NativeHostInstaller.chromeExtensionIDs`
+(`App/Sources/NativeHostInstaller.swift`) so the app's native host accepts it.
 
 ## Assets needed
 
