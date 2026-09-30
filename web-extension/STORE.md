@@ -61,6 +61,11 @@ Auto-update is automatic once published.
 - **Host access to `visio.numerique.gouv.fr`** — the extension injects a stylesheet
   and a small layout script into the call page to rearrange the participant strip.
   It runs nowhere else.
+- **`scripting`** — runs the mute bridge on Google Meet / Teams only after you allow
+  those sites from the popup, including tabs already open.
+- **Optional access to meet.google.com, teams.microsoft.com, teams.cloud.microsoft,
+  teams.live.com** — requested only when you turn on « Google Meet » or « Teams » in
+  the popup; used to read your microphone's mute state and press mute there.
 
 ## Data collection
 

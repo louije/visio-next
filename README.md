@@ -27,6 +27,9 @@ liens de l'application Viso de LaSuite (visio.numerique.gouv.fr).
 - Génération de liens Visio personnalisables
 - Widget macOS
 - Extension Safari qui améliore la mise en page de Visio lors de partages d'écran
+- Raccourci global (et micro dans la barre des menus) pour couper le micro de toutes les visios
+  ouvertes dans Safari, Chrome ou Firefox (avec l'extension) : Visio, et Google Meet ou Teams
+  si vous les autorisez
 
 ## Installation
 
