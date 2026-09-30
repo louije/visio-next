@@ -16,13 +16,17 @@
     return i ? String(i.textContent).trim() : '';
   }
 
-  /** The mic among the [data-is-muted] buttons; the first one if no icon says so. */
+  /** The mic among the [data-is-muted] buttons; else the first non-camera one. */
   function findMic(doc) {
     var buttons = doc.querySelectorAll('button[data-is-muted]');
     for (var k = 0; k < buttons.length; k++) {
       if (/^mic/.test(iconName(buttons[k]))) return buttons[k];
     }
-    return buttons[0] || null;
+    // No mic icon: the first button that is certainly not the camera.
+    for (var j = 0; j < buttons.length; j++) {
+      if (!/^videocam/.test(iconName(buttons[j]))) return buttons[j];
+    }
+    return null;
   }
 
   function isDisabled(el) {

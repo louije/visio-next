@@ -23,6 +23,19 @@
     return null;
   }
 
+  /** The first visible match across the selectors, else the first match. */
+  function firstVisible(doc, selectors) {
+    var fallback = null;
+    for (var k = 0; k < selectors.length; k++) {
+      var all = doc.querySelectorAll(selectors[k]);
+      for (var j = 0; j < all.length; j++) {
+        if (isVisible(all[j])) return all[j];
+        if (!fallback) fallback = all[j];
+      }
+    }
+    return fallback;
+  }
+
   function isVisible(el) {
     return !!el && el.getClientRects().length > 0;
   }
@@ -56,14 +69,14 @@
 
     /** null = not in a call; muted null = in a call, state unreadable. */
     read: function (doc) {
-      var mic = first(doc, MIC);
+      var mic = firstVisible(doc, MIC);
       // The pre-join screen has a mic too: a call has a visible hangup button and no join button.
       if (!mic || !isVisible(first(doc, HANGUP)) || isVisible(first(doc, PREJOIN))) return null;
       return { muted: mutedFrom(mic), canUnmute: !isDisabled(mic) };
     },
 
     toggle: function (doc) {
-      var mic = first(doc, MIC);
+      var mic = firstVisible(doc, MIC);
       if (!mic) return false;
       mic.click();
       return true;

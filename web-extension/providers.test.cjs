@@ -168,3 +168,23 @@ test('teams: toggle clicks the mic', () => {
 test('teams: guards against clicking the wrong control', () => {
   assert.equal(teams.guardToggle, true);
 });
+
+test('meet: never falls back to the camera', () => {
+  const cam = meetButton('false', 'videocam');
+  const blank = meetButton('true', '');
+  assert.equal(meet.toggle(doc([cam, blank, panels()])), true);
+  assert.equal(blank.clicks, 1);
+  assert.equal(cam.clicks, 0);
+  const only = doc([meetButton('false', 'videocam'), panels()]);
+  assert.equal(meet.read(only), null);
+  assert.equal(meet.toggle(only), false);
+});
+
+test('teams: prefers the visible mic over a hidden one', () => {
+  const hidden = teamsMic(LIVE, { hidden: true });
+  const shown = el('button', Object.assign({ 'data-inp': 'microphone-button' }, MUTED));
+  assert.equal(teams.read(doc([hidden, shown, hangup()])).muted, true);
+  assert.equal(teams.toggle(doc([hidden, shown, hangup()])), true);
+  assert.equal(shown.clicks, 1);
+  assert.equal(hidden.clicks, 0);
+});
