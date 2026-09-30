@@ -3,14 +3,22 @@
 <meta charset="utf-8">
 <title>Adaptive Visio layout</title>
 <style>
-  body { font: 13px/1.4 system-ui, sans-serif; margin: 14px; width: 190px; color: #1a1a2e; }
+  body { font: 13px/1.4 system-ui, sans-serif; margin: 14px; width: 210px; color: #1a1a2e; }
   h1 { font-size: 13px; margin: 0 0 10px; }
   label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
   input { width: 16px; height: 16px; accent-color: #000091; }
+  h2 { font-size: 12px; margin: 14px 0 8px; }
+  #sites label + label { margin-top: 6px; }
   p { margin: 10px 0 0; color: #666; font-size: 11px; }
 </style>
 <h1>Adaptive Visio layout</h1>
 <label><input type="checkbox" id="toggle"> Enabled</label>
 <p>Adapts the participant strip to the shared screen. Applies on visio.numerique.gouv.fr.</p>
+<section id="sites">
+  <h2>Global mute also on</h2>
+  <label><input type="checkbox" data-site="meet"> Google Meet</label>
+  <label><input type="checkbox" data-site="teams"> Teams</label>
+  <p>With the VisioNext app: its shortcut mutes every call. Each site asks for access once.</p>
+</section>
 <script src="popup.js"></script>
 </html>
