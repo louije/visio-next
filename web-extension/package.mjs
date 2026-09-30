@@ -28,7 +28,10 @@ writeFileSync(join(stage, 'manifest.json'), JSON.stringify(manifest, null, 2) + 
 
 // -r: recurse into folders; -X: no extra file attributes. Run from the stage so paths
 // are relative to the extension root.
-execFileSync('zip', ['-rX', out, 'manifest.json', ...files], { cwd: stage, stdio: 'inherit' })
-rmSync(stage, { recursive: true, force: true })
+try {
+  execFileSync('zip', ['-rX', out, 'manifest.json', ...files], { cwd: stage, stdio: 'inherit' })
+} finally {
+  rmSync(stage, { recursive: true, force: true })
+}
 
 console.log('Wrote dist/web-extension.zip (manifest.json without key, %s)', files.join(', '))

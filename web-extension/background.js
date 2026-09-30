@@ -49,31 +49,47 @@ async function activeSites() {
 /** Start the call bridge in a site's open tabs (call-bridge.js runs once per page). */
 async function inject(site) {
   if (!api.scripting) return;
-  const tabs = await api.tabs.query({ url: site.origins });
-  for (const tab of tabs) {
-    Promise.resolve(api.scripting.executeScript({ target: { tabId: tab.id }, files: site.js })).catch(() => {});
+  try {
+    for (const id of await tabIdsFor(site.origins)) {
+      Promise.resolve(api.scripting.executeScript({ target: { tabId: id }, files: site.js })).catch(() => {});
+    }
+  } catch (e) { /* query failed */ }
+}
+
+/** Ids of the tabs open on any of these origins (one query per origin: robust across browsers). */
+async function tabIdsFor(origins) {
+  const ids = new Set();
+  for (const origin of origins) {
+    try {
+      for (const tab of await api.tabs.query({ url: origin })) ids.add(tab.id);
+    } catch (e) { /* bad pattern for this browser: skip it */ }
   }
+  return ids;
 }
 
 /** Register the content scripts of opted-in sites, unregister the others. */
-async function syncSites() {
+async function doSyncSites() {
   if (!api.scripting || !api.scripting.registerContentScripts) return;
   for (const site of OPTIONAL) {
     const id = 'vn-' + site.id;
     try {
-      const registered = (await api.scripting.getRegisteredContentScripts({ ids: [id] })).length > 0;
+      const registered = (await api.scripting.getRegisteredContentScripts()).some((s) => s.id === id);
       const on = await allowed(site);
       if (on && !registered) {
         await api.scripting.registerContentScripts([{
           id, matches: site.origins, js: site.js, runAt: 'document_idle', persistAcrossSessions: true,
         }]);
-        await inject(site); // tabs opened before the permission was granted
+        await inject(site).catch(() => {}); // tabs opened before the permission was granted
       } else if (!on && registered) {
         await api.scripting.unregisterContentScripts({ ids: [id] });
       }
     } catch (e) { /* this browser can't register scripts: the site stays off */ }
   }
 }
+
+let syncing = Promise.resolve();
+/** Serialized: overlapping permission events / startups must not interleave. */
+function syncSites() { return (syncing = syncing.then(doSyncSites, doSyncSites)); }
 
 function tell(tabId, value) {
   Promise.resolve(api.tabs.sendMessage(tabId, { type: 'setMuted', value })).catch(() => {});
@@ -89,8 +105,9 @@ async function onAppMessage(raw) {
   try {
     if (msg.tabId != null) return tell(msg.tabId, msg.value);
     const origins = (await activeSites()).flatMap((site) => site.origins);
-    const tabs = await api.tabs.query({ url: origins });
-    for (const tab of tabs) tell(tab.id, msg.value);
+    // Also known sessions: a call on a site revoked mid-call is still muted.
+    const ids = new Set([...(await tabIdsFor(origins)), ...sessions.keys()]);
+    for (const id of ids) tell(id, msg.value);
   } catch (e) { /* tab gone or query failed */ }
 }
 
@@ -146,8 +163,17 @@ api.permissions?.onAdded?.addListener(syncSites);
 api.permissions?.onRemoved?.addListener(syncSites);
 
 api.runtime.onInstalled.addListener(async () => {
+  // Drop registrations from the previous version so this one's js/matches take effect.
+  try {
+    if (api.scripting && api.scripting.getRegisteredContentScripts) {
+      const ids = (await api.scripting.getRegisteredContentScripts()).map((s) => s.id).filter((id) => id.startsWith('vn-'));
+      if (ids.length) await api.scripting.unregisterContentScripts({ ids });
+    }
+  } catch (e) { /* nothing to clean */ }
   await syncSites();
   // An update orphans the call bridges already running in open call tabs (they stop
   // themselves): start fresh ones so calls in progress stay muteable.
-  for (const site of await activeSites()) await inject(site);
+  for (const site of await activeSites()) await inject(site).catch(() => {});
 });
+
+syncSites(); // once per worker start

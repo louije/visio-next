@@ -22,6 +22,7 @@
   // Keep in sync with OPTIONAL in background.js.
   var SITES = {
     meet: ['https://meet.google.com/*'],
+    // Teams needs all three origins: permissions are all-or-nothing on the array.
     teams: ['https://teams.microsoft.com/*', 'https://teams.cloud.microsoft/*', 'https://teams.live.com/*'],
   };
   var section = document.getElementById('sites');
