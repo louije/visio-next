@@ -162,14 +162,23 @@ api.runtime.onStartup?.addListener(syncSites);
 api.permissions?.onAdded?.addListener(syncSites);
 api.permissions?.onRemoved?.addListener(syncSites);
 
-api.runtime.onInstalled.addListener(async () => {
-  // Drop registrations from the previous version so this one's js/matches take effect.
+/** Drop our registrations so the next sync registers this version's js/matches. */
+async function dropRegistrations() {
   try {
     if (api.scripting && api.scripting.getRegisteredContentScripts) {
       const ids = (await api.scripting.getRegisteredContentScripts()).map((s) => s.id).filter((id) => id.startsWith('vn-'));
       if (ids.length) await api.scripting.unregisterContentScripts({ ids });
     }
   } catch (e) { /* nothing to clean */ }
+}
+
+api.runtime.onInstalled.addListener(async (details) => {
+  // Only when this extension is installed or updated (not on a browser update, which
+  // would leave restoring tabs briefly without a registration). Through the sync chain,
+  // so it can't interleave with a sync already running.
+  if (details.reason === 'install' || details.reason === 'update') {
+    syncing = syncing.then(dropRegistrations, dropRegistrations);
+  }
   await syncSites();
   // An update orphans the call bridges already running in open call tabs (they stop
   // themselves): start fresh ones so calls in progress stay muteable.
