@@ -46,13 +46,13 @@
   if (typeof document === 'undefined') return;
   // Registered scripts and executeScript (after an update or a new permission) can
   // both land in the same page; run once.
-  if (globalThis.__vnCallBridge) return;
-  globalThis.__vnCallBridge = true;
-
   var api = (typeof browser !== 'undefined') ? browser
     : (typeof chrome !== 'undefined') ? chrome : null;
   var provider = pickProvider(globalThis.__vnProviders || [], location.host);
   if (!api || !api.runtime || !provider) return;
+  var prev = globalThis.__vnCallBridge;
+  if (prev && prev.alive && prev.alive()) return;
+  if (prev && prev.stop) prev.stop(); // orphan from the previous version (same isolated world)
 
   var HEARTBEAT_MS = 30000;
   var THROTTLE_MS = 250;
@@ -63,7 +63,7 @@
     'data-microphone-enabled', 'data-can-publish-microphone', // Visio
     'data-is-muted', // Meet
     'data-state', 'data-track-action-scenario', // Teams
-    'aria-label', 'aria-pressed', 'disabled', 'aria-disabled',
+    'aria-label', 'disabled', 'aria-disabled',
   ];
 
   var last = null;      // last reported { muted, canUnmute }; null = not in a call
@@ -73,6 +73,7 @@
   var heartbeat = null;
   var byeTimer = null;
   var refreshTimer = null;
+  var retryTimer = null;
   var docMo = null;
 
   // Extension reloaded: this page's script is orphaned. Stop everything.
@@ -82,8 +83,16 @@
     clearInterval(heartbeat);
     clearTimeout(byeTimer);
     clearTimeout(refreshTimer);
+    clearTimeout(retryTimer);
     last = null; pending = null;
+    if (globalThis.__vnCallBridge === me) delete globalThis.__vnCallBridge;
   }
+
+  var me = {
+    alive: function () { return !dead && !!(api && api.runtime && api.runtime.id); },
+    stop: teardown,
+  };
+  globalThis.__vnCallBridge = me;
 
   function send(msg) {
     if (dead) return;
@@ -106,18 +115,33 @@
     send({ type: 'bye' });
   }
 
+  function byeCheck() {
+    byeTimer = null;
+    if (dead) return;
+    if (provider.read(document)) schedule(); else leaveCall();
+  }
+
+  function beat() { refresh(); sendState(); }
+
   function refresh() {
+    clearTimeout(refreshTimer);
     refreshTimer = null;
     if (dead) return;
+    if (!api.runtime || !api.runtime.id) { teardown(); return; }
     var s = provider.read(document);
     if (!s) {
-      if (last && !byeTimer) byeTimer = setTimeout(leaveCall, BYE_GRACE_MS);
+      if (last && !byeTimer) byeTimer = setTimeout(byeCheck, BYE_GRACE_MS);
       return;
     }
     clearTimeout(byeTimer); byeTimer = null;
-    if (s.muted === null) return; // in a call, momentarily unreadable: wait
+    if (s.muted === null) { // in a call, momentarily unreadable: retry without a mutation
+      if (last && !retryTimer) {
+        retryTimer = setTimeout(function () { retryTimer = null; schedule(); }, 1000);
+      }
+      return;
+    }
     if (pending && pending.muted === s.muted) pending = null;
-    if (!last) heartbeat = setInterval(sendState, HEARTBEAT_MS);
+    if (!last) heartbeat = setInterval(beat, HEARTBEAT_MS);
     if (sameState(s, last)) return;
     last = s;
     sendState();
@@ -128,15 +152,20 @@
   }
 
   // A second after a press: did it take? Report the real state either way.
-  function verify() {
-    refresh();
-    if (pending && Date.now() - pending.at >= VERIFY_MS) {
-      // For click-based providers a press that didn't take may mean we clicked the
-      // wrong control: never keep doing that on this page.
-      if (provider.guardToggle) toggleOff = true;
-      pending = null;
-    }
-    sendState();
+  function verify(p) {
+    refresh(); sendState();
+    if (pending !== p) return; // taken, or superseded by a newer press
+    var s = provider.read(document);
+    if (!s || s.muted === null || s.muted === p.muted) { pending = null; return; }
+    if (!provider.guardToggle) { pending = null; return; }
+    setTimeout(function () { // second chance before giving up on this page
+      var s2 = provider.read(document);
+      if (pending === p && s2 && s2.muted !== null && s2.muted !== p.muted) {
+        toggleOff = true;
+        console.warn('VisioNext: a press did not take; stopped pressing on this page');
+      }
+      if (pending === p) pending = null;
+    }, 2000);
   }
 
   api.runtime.onMessage.addListener(function (msg) {
@@ -144,13 +173,13 @@
     var want = !!msg.value;
     if (planMute(provider.read(document), want, pending, Date.now()) !== 'press') return;
     if (!provider.toggle(document)) return;
-    pending = { muted: want, at: Date.now() };
-    setTimeout(verify, VERIFY_MS);
+    var p = pending = { muted: want, at: Date.now() };
+    setTimeout(function () { verify(p); }, VERIFY_MS);
   });
 
   docMo = new MutationObserver(schedule);
   docMo.observe(document.documentElement, {
-    childList: true, subtree: true, attributes: true, attributeFilter: WATCHED,
+    childList: true, subtree: true, attributes: true, characterData: true, attributeFilter: WATCHED,
   });
   window.addEventListener('pagehide', leaveCall);
   window.addEventListener('pageshow', schedule);

@@ -74,6 +74,8 @@
     module.exports = provider;
   } else {
     var list = globalThis.__vnProviders = globalThis.__vnProviders || [];
-    if (!list.some(function (p) { return p.id === provider.id; })) list.push(provider);
+    var at = -1;
+    for (var k = 0; k < list.length; k++) if (list[k].id === provider.id) at = k;
+    if (at >= 0) list[at] = provider; else list.push(provider);
   }
 })();
