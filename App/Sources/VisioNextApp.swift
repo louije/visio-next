@@ -51,11 +51,17 @@ enum MenuBarIcon {
         }
 
         // Solid tint: fill the glyph with the chosen color (non-template so it shows).
-        let out = NSImage(size: pointSize)
+        return tinted(size: pointSize, color: color) { base.draw(in: rect) }
+    }
+
+    /// Draws `content` and fills it with `color`, baked in now (non-template), so every
+    /// tinted icon (glyph, live mic) resolves the color the same way.
+    static func tinted(size: NSSize, color: IconColor, content: () -> Void) -> NSImage {
+        let out = NSImage(size: size)
         out.lockFocus()
-        base.draw(in: rect)
+        content()
         nsColor(for: color).set()
-        rect.fill(using: .sourceAtop)
+        NSRect(origin: .zero, size: size).fill(using: .sourceAtop)
         out.unlockFocus()
         out.isTemplate = false
         return out

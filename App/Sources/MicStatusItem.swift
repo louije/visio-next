@@ -38,23 +38,25 @@ enum MicIcon {
     /// Same height as the VisioNext glyph (MenuBarIcon), so both items share a baseline.
     private static let height: CGFloat = 18
     /// The mic's stand makes it look high when centred; nudge it down to line up with the glyph.
-    private static let drop: CGFloat = 2
+    private static let drop: CGFloat = 0.5
 
     static func image(live: Bool, color: IconColor) -> NSImage? {
-        var config = NSImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-        if live {
-            config = config.applying(NSImage.SymbolConfiguration(paletteColors: [MenuBarIcon.nsColor(for: color)]))
-        }
+        let config = NSImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
         guard let symbol = NSImage(systemSymbolName: live ? "mic.fill" : "mic.slash.fill",
                                    accessibilityDescription: live ? "Micro actif" : "Micro coupé")?
             .withSymbolConfiguration(config) else { return nil }
         let s = symbol.size
-        let image = NSImage(size: NSSize(width: s.width, height: height), flipped: false) { _ in
-            symbol.draw(in: NSRect(x: 0, y: (height - s.height) / 2 - drop, width: s.width, height: s.height))
-            return true
+        let size = NSSize(width: s.width, height: height)
+        let draw = { symbol.draw(in: NSRect(x: 0, y: (height - s.height) / 2 - drop, width: s.width, height: s.height)) }
+        // Live: tinted exactly like the imminent glyph (same color resolution); muted: template.
+        let image: NSImage
+        if live {
+            image = MenuBarIcon.tinted(size: size, color: color, content: draw)
+        } else {
+            image = NSImage(size: size, flipped: false) { _ in draw(); return true }
+            image.isTemplate = true
         }
         image.accessibilityDescription = symbol.accessibilityDescription
-        image.isTemplate = !live
         return image
     }
 }
