@@ -101,3 +101,70 @@ test('meet: toggle reports failure without a mic', () => {
 test('meet: guards against clicking the wrong control', () => {
   assert.equal(meet.guardToggle, true);
 });
+
+// ---- Teams ------------------------------------------------------------------
+
+const teams = require('./providers/teams.js');
+
+const LIVE = { 'data-track-action-scenario': 'callMuteAudio', 'data-state': 'mic-volume-renderer', 'aria-label': 'Mute mic' };
+const MUTED = { 'data-track-action-scenario': 'callUnmuteAudio', 'data-state': 'mic-off', 'aria-label': 'Unmute mic' };
+const teamsMic = (attrs, opts) => el('button', Object.assign({ id: 'microphone-button', 'data-inp': 'microphone-button' }, attrs), [], opts);
+const hangup = (opts) => el('button', { id: 'hangup-button', 'data-tid': 'hangup-main-btn' }, [], opts);
+
+test('teams: matches its hosts', () => {
+  assert.equal(teams.matches('teams.microsoft.com'), true);
+  assert.equal(teams.matches('teams.cloud.microsoft'), true);
+  assert.equal(teams.matches('teams.live.com'), true);
+  assert.equal(teams.matches('meet.google.com'), false);
+});
+
+test('teams: reads the mic in a call', () => {
+  assert.deepEqual(teams.read(doc([teamsMic(LIVE), hangup()])), { muted: false, canUnmute: true });
+  assert.deepEqual(teams.read(doc([teamsMic(MUTED), hangup()])), { muted: true, canUnmute: true });
+});
+
+test('teams: not a call without a visible hangup button, or on the pre-join screen', () => {
+  assert.equal(teams.read(doc([teamsMic(LIVE)])), null);
+  assert.equal(teams.read(doc([teamsMic(LIVE), hangup({ hidden: true })])), null);
+  const prejoin = el('button', { 'data-tid': 'prejoin-join-button' });
+  assert.equal(teams.read(doc([teamsMic(LIVE), hangup(), prejoin])), null);
+});
+
+test('teams: state from either language-independent signal alone', () => {
+  assert.equal(teams.read(doc([teamsMic({ 'data-state': 'mic-off' }), hangup()])).muted, true);
+  assert.equal(teams.read(doc([teamsMic({ 'data-track-action-scenario': 'callMuteAudio' }), hangup()])).muted, false);
+});
+
+test('teams: the two signals disagreeing is unreadable', () => {
+  const d = doc([teamsMic({ 'data-track-action-scenario': 'callMuteAudio', 'data-state': 'mic-off' }), hangup()]);
+  assert.equal(teams.read(d).muted, null);
+});
+
+test('teams: falls back to the English label, else unreadable', () => {
+  assert.equal(teams.read(doc([teamsMic({ 'aria-label': 'Unmute mic' }), hangup()])).muted, true);
+  assert.equal(teams.read(doc([teamsMic({ 'aria-label': 'Mute mic' }), hangup()])).muted, false);
+  assert.equal(teams.read(doc([teamsMic({ 'aria-label': 'Couper le micro' }), hangup()])).muted, null);
+});
+
+test('teams: finds the mic by its other known hooks', () => {
+  const byInp = el('button', Object.assign({ 'data-inp': 'microphone-button' }, MUTED));
+  assert.equal(teams.read(doc([byInp, hangup()])).muted, true);
+  const byTid = el('button', Object.assign({ 'data-tid': 'toggle-mute' }, LIVE));
+  const hangupByInp = el('button', { 'data-inp': 'hangup-button' });
+  assert.equal(teams.read(doc([byTid, hangupByInp])).muted, false);
+});
+
+test('teams: a disabled mic cannot be unmuted', () => {
+  assert.equal(teams.read(doc([teamsMic(MUTED, { disabled: true }), hangup()])).canUnmute, false);
+});
+
+test('teams: toggle clicks the mic', () => {
+  const mic = teamsMic(LIVE);
+  assert.equal(teams.toggle(doc([mic, hangup()])), true);
+  assert.equal(mic.clicks, 1);
+  assert.equal(teams.toggle(doc([hangup()])), false);
+});
+
+test('teams: guards against clicking the wrong control', () => {
+  assert.equal(teams.guardToggle, true);
+});
