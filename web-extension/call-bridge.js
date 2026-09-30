@@ -18,11 +18,12 @@
   /**
    * 'press' when a toggle is needed to reach `wantMuted`, else 'skip'. `pending` is
    * null or { muted, at } for a press the page has not reflected yet: repeating it
-   * within VERIFY_MS would toggle back.
+   * would toggle back, however long the page takes (the core always clears `pending`:
+   * matching read, verify, second check, leaving the call).
    */
-  function planMute(state, wantMuted, pending, now) {
+  function planMute(state, wantMuted, pending) {
     if (!state || state.muted === null) return 'skip';
-    if (pending && pending.muted === wantMuted && now - pending.at < VERIFY_MS) return 'skip';
+    if (pending && pending.muted === wantMuted) return 'skip';
     if (state.muted === wantMuted) return 'skip';
     if (!wantMuted && !state.canUnmute) return 'skip';
     return 'press';
@@ -45,7 +46,8 @@
   // ---- DOM + messaging (extension only) ------------------------------------
   if (typeof document === 'undefined') return;
   // Registered scripts and executeScript (after an update or a new permission) can
-  // both land in the same page; run once.
+  // both land in the same page: a live instance wins; an orphan from the previous
+  // version (same isolated world in Chrome) is stopped and replaced.
   var api = (typeof browser !== 'undefined') ? browser
     : (typeof chrome !== 'undefined') ? chrome : null;
   var provider = pickProvider(globalThis.__vnProviders || [], location.host);
@@ -171,7 +173,7 @@
   api.runtime.onMessage.addListener(function (msg) {
     if (!msg || msg.type !== 'setMuted' || dead || toggleOff) return;
     var want = !!msg.value;
-    if (planMute(provider.read(document), want, pending, Date.now()) !== 'press') return;
+    if (planMute(provider.read(document), want, pending) !== 'press') return;
     if (!provider.toggle(document)) return;
     var p = pending = { muted: want, at: Date.now() };
     setTimeout(function () { verify(p); }, VERIFY_MS);
