@@ -51,7 +51,7 @@ Auto-update is automatic once published.
 >
 > With the companion VisioNext macOS app, its global shortcut also mutes your
 > microphone in every open call at once: Visio always, and Google Meet or Teams if
-> you allow them from the popup (each site asks for access once).
+> you allow them in the extension's settings (each site asks for access once).
 >
 > Unofficial, third-party enhancement. Not affiliated with DINUM, La Suite
 > numérique, Google or Microsoft.
@@ -64,16 +64,16 @@ Auto-update is automatic once published.
 - **Host access to `visio.numerique.gouv.fr`** — the extension injects a stylesheet
   and a small layout script into the call page to rearrange the participant strip,
   and the mute bridge that reads the microphone state and presses mute. It runs
-  elsewhere only on the sites you allow from the popup.
+  elsewhere only on the sites you allow in the extension's settings.
 - **`nativeMessaging`** — talks to the companion VisioNext macOS app so its global
   shortcut can mute your microphone in every open call at once. Only each call's mute
   state and a mute command are exchanged, locally; nothing leaves the machine.
 - **`scripting`** — runs the mute bridge on Google Meet / Teams only after you allow
-  those sites from the popup, including tabs already open, and re-starts the mute
+  those sites in the extension's settings, including tabs already open, and re-starts the mute
   bridge in open call tabs after an install or update.
 - **Optional access to meet.google.com, teams.microsoft.com, teams.cloud.microsoft,
   teams.live.com** — requested only when you turn on « Google Meet » or « Teams » in
-  the popup; used to read your microphone's mute state and press mute there.
+  the extension's settings; used to read your microphone's mute state and press mute there.
 
 ## Data collection
 

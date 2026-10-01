@@ -15,7 +15,7 @@ const dist = join(here, 'dist')
 const stage = join(dist, 'stage')
 const out = join(dist, 'web-extension.zip')
 
-const files = ['enhance.css', 'layout-engine.js', 'call-bridge.js', 'background.js', 'popup.html', 'popup.js', 'icons', 'providers']
+const files = ['enhance.css', 'layout-engine.js', 'call-bridge.js', 'background.js', 'popup.html', 'popup.js', 'options.html', 'options.js', 'icons', 'providers']
 
 rmSync(stage, { recursive: true, force: true })
 rmSync(out, { force: true })

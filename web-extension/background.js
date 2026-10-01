@@ -4,7 +4,7 @@
  * Keeps the list of calls in this browser (reported by call-bridge.js) and, while
  * there is at least one, a native-messaging port to the VisioNext app. Relays the
  * app's `setMuted` to the call tabs. Visio is always on; Google Meet and Teams are
- * opt-in from the popup (optional host permissions): this file registers their
+ * opt-in from the options page (optional host permissions): this file registers their
  * content scripts when allowed and unregisters them when not.
  *
  * Chrome/Firefox: the port reaches the app through the `com.meidosem.visionext`
@@ -18,7 +18,7 @@ const api = globalThis.browser ?? globalThis.chrome;
 const HOST = 'com.meidosem.visionext';
 
 const VISIO = { origins: ['https://visio.numerique.gouv.fr/*'], js: ['providers/visio.js', 'call-bridge.js'] };
-/** Sites the user opts into from the popup. Keep origins in sync with popup.js. */
+/** Sites the user opts into from the options page. Keep origins in sync with options.js. */
 const OPTIONAL = [
   { id: 'meet', origins: ['https://meet.google.com/*'], js: ['providers/meet.js', 'call-bridge.js'] },
   {

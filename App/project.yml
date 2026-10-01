@@ -144,6 +144,12 @@ targets:
       - path: ../web-extension/popup.js
         type: file
         buildPhase: resources
+      - path: ../web-extension/options.html
+        type: file
+        buildPhase: resources
+      - path: ../web-extension/options.js
+        type: file
+        buildPhase: resources
       - path: ../web-extension/call-bridge.js
         type: file
         buildPhase: resources

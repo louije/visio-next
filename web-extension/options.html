@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>VisioNext settings</title>
+<style>
+  body { font: 13px/1.4 system-ui, sans-serif; margin: 16px; min-width: 300px; color: #1a1a2e; }
+  h1 { font-size: 13px; margin: 0 0 10px; }
+  label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  label + label { margin-top: 6px; }
+  input { width: 16px; height: 16px; accent-color: #000091; }
+  p { margin: 10px 0 0; color: #666; font-size: 11px; }
+</style>
+<section id="sites">
+  <h1>Global mute also on</h1>
+  <label><input type="checkbox" data-site="meet"> Google Meet</label>
+  <label><input type="checkbox" data-site="teams"> Teams</label>
+  <p>With the VisioNext app, its shortcut mutes every call: Visio always, and these
+    sites once allowed. Each site asks for access once.</p>
+</section>
+<p id="unsupported" hidden>This browser can't enable the global mute on other sites
+  yet; it works on Visio.</p>
+<script src="options.js"></script>
+</html>
