@@ -7,9 +7,9 @@ import Foundation
     #expect(BridgeMessage(json: json) == .state(tabId: 7, muted: false, canUnmute: true))
 }
 
-@Test func stateWithoutCanUnmuteDefaultsToTrue() {
+@Test func stateWithoutCanUnmuteDefaultsToFalse() {
     let json = Data(#"{"type":"state","tabId":7,"muted":true}"#.utf8)
-    #expect(BridgeMessage(json: json) == .state(tabId: 7, muted: true, canUnmute: true))
+    #expect(BridgeMessage(json: json) == .state(tabId: 7, muted: true, canUnmute: false))
 }
 
 @Test func decodesBye() {

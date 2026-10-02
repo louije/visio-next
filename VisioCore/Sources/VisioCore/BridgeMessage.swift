@@ -17,7 +17,7 @@ public enum BridgeMessage: Equatable, Sendable {
         switch wire.type {
         case "state":
             guard let muted = wire.muted else { return nil }
-            self = .state(tabId: wire.tabId, muted: muted, canUnmute: wire.canUnmute ?? true)
+            self = .state(tabId: wire.tabId, muted: muted, canUnmute: wire.canUnmute ?? false)
         case "bye":
             self = .bye(tabId: wire.tabId)
         default:
