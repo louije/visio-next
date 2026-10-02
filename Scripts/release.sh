@@ -119,6 +119,13 @@ xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
 xcrun stapler staple "$DMG_PATH"
 xcrun stapler validate "$DMG_PATH"
 
+# Forget the build products so this Mac keeps using the installed copy's Safari
+# extension: Safari lists the extension of every VisioNext.app LaunchServices knows,
+# and the app's SFSafariApplication.dispatchMessage only reaches the copy bundled with it.
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+"$LSREGISTER" -u "$APP" 2>/dev/null || true
+"$LSREGISTER" -u "$ARCHIVE/Products/Applications/VisioNext.app" 2>/dev/null || true
+
 # --- Tag main + GitHub Release (hosts the zip; this is the download target) -
 # Must precede the appcast push so the release asset exists when clients fetch
 # the new appcast and resolve its enclosure URLs.
