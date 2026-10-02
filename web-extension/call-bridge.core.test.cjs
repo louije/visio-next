@@ -9,31 +9,33 @@ const SRC = fs.readFileSync(__dirname + '/call-bridge.js', 'utf8');
 
 function setup(opts, shared) {
   opts = opts || {};
-  const page = { state: { muted: false, canUnmute: true }, clicks: 0, reflect: true };
+  // canToggle false: the provider finds nothing to press (toggle() returns false).
+  const page = { state: { muted: false, canUnmute: true }, clicks: 0, tries: 0, reflect: true, canToggle: true };
   const provider = {
     id: 'fake',
     guardToggle: opts.guardToggle !== false,
     matches: () => true,
     read: () => (page.state ? Object.assign({}, page.state) : null),
     toggle: () => {
+      page.tries++;
+      if (!page.canToggle) return false;
       page.clicks++;
       if (page.reflect && page.state) page.state = Object.assign({}, page.state, { muted: !page.state.muted });
       return true;
     },
   };
   let now = 0, id = 0, moCb = null, runtimeId = 'x';
-  const timers = [], sent = [], listeners = [];
+  const timers = [], sent = [], listeners = [], windowListeners = {};
   const add = (fn, ms, every) => { const t = { id: ++id, fn, at: now + ms, every }; timers.push(t); return t.id; };
   const clear = (i) => { const k = timers.findIndex((t) => t.id === i); if (k >= 0) timers.splice(k, 1); };
   const ctx = {
     document: { documentElement: {} },
     location: { host: 'x.test', href: 'https://x.test/room' },
-    window: { addEventListener() {} },
+    window: { addEventListener: (type, fn) => { windowListeners[type] = fn; } },
     console: { warn() {} },
     MutationObserver: function (cb) { moCb = cb; this.observe = () => {}; this.disconnect = () => {}; },
     setTimeout: (f, ms) => add(f, ms), setInterval: (f, ms) => add(f, ms, ms),
     clearTimeout: clear, clearInterval: clear,
-    Date: { now: () => now },
     chrome: { runtime: {
       get id() { return runtimeId; },
       sendMessage: (m) => { sent.push(Object.assign({ t: now }, m)); },
@@ -60,6 +62,8 @@ function setup(opts, shared) {
       now = end;
     },
     mutate() { if (moCb) moCb([]); },
+    fire(type) { windowListeners[type](); },
+    unload() { runtimeId = undefined; }, // the extension was reloaded or updated
     message(msg) { listeners.forEach((l) => l(msg)); },
     press(value) { listeners.forEach((l) => l({ type: 'setMuted', value })); },
     states() { return sent.filter((m) => m.type === 'state'); },
@@ -191,4 +195,40 @@ test('core: a stop for other sites is ignored', () => {
   h.message({ type: 'stop', origins: ['https://y.test/*', 'https://x.test.evil/*'] });
   h.page.state = { muted: true, canUnmute: true }; h.mutate(); h.advance(300);
   assert.deepEqual(h.states().map((m) => m.muted), [false, true]);
+});
+
+test('core: leaving the page says bye', () => {
+  const h = setup();
+  h.advance(300);
+  h.fire('pagehide');
+  assert.deepEqual(h.sent.map((m) => m.type), ['state', 'bye']);
+});
+
+test('core: once the extension is gone, it tears down and sends nothing', () => {
+  const h = setup();
+  h.advance(300);
+  h.unload();
+  h.page.state = { muted: true, canUnmute: true }; h.mutate(); h.advance(60000);
+  assert.equal(h.sent.length, 1);
+  assert.equal(h.ctx.__vnCallBridge, undefined);
+  assert.equal(h.timers.length, 0);
+});
+
+test('core: no state follows a bye, heartbeat or not', () => {
+  const h = setup();
+  h.advance(300);
+  h.page.state = null; h.mutate(); h.advance(3000);
+  h.advance(60000);
+  assert.deepEqual(h.sent.map((m) => m.type), ['state', 'bye']);
+});
+
+test('core: a press with nothing to press is not left pending', () => {
+  const h = setup();
+  h.advance(300);
+  h.page.canToggle = false;
+  h.press(true);
+  h.page.canToggle = true;
+  h.press(true);
+  assert.equal(h.page.tries, 2);
+  assert.equal(h.page.clicks, 1);
 });
