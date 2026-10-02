@@ -16,8 +16,10 @@ enum NativeHostInstaller {
     static func install() {
         // A translocated or disk-image copy lives at a path that vanishes: manifests pointing
         // there would break every browser's host. Wait until the app runs from its real home.
+        // Both are read-only volumes; an app on a (writable) external drive still installs.
         let bundlePath = Bundle.main.bundlePath
-        if bundlePath.contains("/AppTranslocation/") || bundlePath.hasPrefix("/Volumes/") {
+        let readOnly = (try? Bundle.main.bundleURL.resourceValues(forKeys: [.volumeIsReadOnlyKey]))?.volumeIsReadOnly == true
+        if readOnly || bundlePath.contains("/AppTranslocation/") {
             log.info("not installing native hosts: app runs from a transient path \(bundlePath, privacy: .public)")
             return
         }
