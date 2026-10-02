@@ -4,33 +4,32 @@ import VisioCore
 
 @main
 struct VisioNextApp: App {
-    @StateObject private var vm = MenuBarViewModel()
+    @StateObject private var app = AppController()
     @StateObject private var updater = UpdaterViewModel()
-    @StateObject private var bridge = CallBridge.live()
-
-    init() {
-        // Before any socket exists: a write to a bridge connection whose peer has gone
-        // must fail with EPIPE, not kill the app. SO_NOSIGPIPE alone isn't enough, as
-        // setsockopt fails on a connection the peer closed before it was accepted.
-        signal(SIGPIPE, SIG_IGN)
-    }
 
     var body: some Scene {
         MenuBarExtra {
-            MenuBarView(vm: vm, bridge: bridge)
+            MenuBarView(vm: app.menu, bridge: app.bridge)
         } label: {
-            // Normal: monochrome template glyph (auto-tinted to the menu bar).
-            // Imminent: switches to the user's chosen color (or the bicolor brand glyph).
-            // During a call a separate mic item shows up next to it (MicStatusItem), live
-            // mic in the same chosen color.
-            Image(nsImage: MenuBarIcon.image(imminent: vm.isImminent, color: vm.imminentColor))
-                .onChange(of: vm.imminentColor, initial: true) { bridge.micColor = vm.imminentColor }
+            MenuBarLabel(vm: app.menu)
         }
         .menuBarExtraStyle(.window)
 
         Settings {
-            SettingsView(updater: updater) { vm.reloadSettings() }
+            SettingsView(updater: updater) { app.menu.reloadSettings() }
         }
+    }
+}
+
+/// Normal: monochrome template glyph (auto-tinted to the menu bar).
+/// Imminent: switches to the user's chosen color (or the bicolor brand glyph).
+/// During a call a separate mic item shows up next to it (MicStatusItem, run by
+/// AppController), live mic in the same chosen color.
+private struct MenuBarLabel: View {
+    @ObservedObject var vm: MenuBarViewModel
+
+    var body: some View {
+        Image(nsImage: MenuBarIcon.image(imminent: vm.isImminent, color: vm.imminentColor))
     }
 }
 

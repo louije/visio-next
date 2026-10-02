@@ -2,21 +2,13 @@ import Foundation
 import AppKit
 import os
 import VisioCore
-import KeyboardShortcuts
 
 /// The app's end of the browser bridge: keeps the live `CallSessions` from what the
 /// extensions report through the transport, and sends mute commands back, as frames down
 /// the pipes and through `dispatchMessage` to Safari. Does nothing until `start()`.
 @MainActor
 final class CallBridge: ObservableObject {
-    @Published private(set) var sessions = CallSessions() {
-        didSet { updateMic() }
-    }
-
-    /// The "hot" color (Réglages → Général), for the live mic. Set by the app.
-    var micColor: IconColor = .red {
-        didSet { updateMic() }
-    }
+    @Published private(set) var sessions = CallSessions()
 
     /// Where the calls stand: drives the menu item and the mic's tooltip. nil = no call.
     var muteState: MuteState? { MutePolicy.state(for: sessions) }
@@ -25,30 +17,21 @@ final class CallBridge: ObservableObject {
     private let transport: BridgeTransport
     private let safari: SafariMessaging
     private var expiryTimer: Timer?
-    private var mic: MicStatusItem?
 
     init(transport: BridgeTransport, safari: SafariMessaging) {
         self.transport = transport
         self.safari = safari
     }
 
-    /// The bridge on the real sockets and Safari, started.
+    /// The bridge on the real sockets and Safari.
     static func live() -> CallBridge {
-        let bridge = CallBridge(
-            transport: SocketBridgeTransport(safariSocketPath: BridgeEndpoint.safariSocketPath,
-                                             pipeSocketPath: BridgeEndpoint.pipeSocketPath,
-                                             log: log),
-            safari: SafariMessenger())
-        bridge.start()
-        return bridge
+        CallBridge(transport: SocketBridgeTransport(safariSocketPath: BridgeEndpoint.safariSocketPath,
+                                                    pipeSocketPath: BridgeEndpoint.pipeSocketPath,
+                                                    log: log),
+                   safari: SafariMessenger())
     }
 
     func start() {
-        // Not from Xcode runs or previews: they'd point every browser's host at DerivedData,
-        // hijacking the installed app. Scripts/install.sh builds Release, so it still installs.
-        #if !DEBUG
-        NativeHostInstaller.install()
-        #endif
         transport.onEvent = { [weak self] event in self?.handle(event) }
         transport.start()
         expiryTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
@@ -57,17 +40,6 @@ final class CallBridge: ObservableObject {
         // Nothing else tells us Safari's calls ended when it quits: drop them, or they'd
         // linger as ghost calls until expiry.
         safari.observeQuit { [weak self] in self?.sessions.drop(channel: .safari) }
-        KeyboardShortcuts.onKeyUp(for: .toggleMute) { [weak self] in
-            MainActor.assumeIsolated { self?.toggleMute() }
-        }
-        // After MenuBarExtra has created its status item, so the mic lands right next to it.
-        DispatchQueue.main.async { [weak self] in
-            MainActor.assumeIsolated {
-                guard let self else { return }
-                self.mic = MicStatusItem { [weak self] in self?.toggleMute() }
-                self.updateMic()
-            }
-        }
         Self.log.info("bridge started")
     }
 
@@ -78,10 +50,6 @@ final class CallBridge: ObservableObject {
             return
         }
         send(command)
-    }
-
-    private func updateMic() {
-        mic?.update(state: muteState, indicator: sessions.indicator, color: micColor)
     }
 
     func send(_ command: MuteCommand) {
@@ -102,9 +70,4 @@ final class CallBridge: ObservableObject {
         case let .closed(channel): sessions.drop(channel: channel)
         }
     }
-}
-
-extension KeyboardShortcuts.Name {
-    /// No default: the user picks it in Réglages → Général.
-    static let toggleMute = Self("toggleMute")
 }

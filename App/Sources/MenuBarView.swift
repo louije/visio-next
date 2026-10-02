@@ -169,16 +169,17 @@ struct MeetingRow: View {
 }
 
 #Preview("Menu bar popover") {
-    MenuBarView(vm: MenuBarViewModel(service: PreviewEventService()),
-                bridge: CallBridge(transport: PreviewTransport(), safari: PreviewSafari()))
+    let bridge = CallBridge(transport: PreviewTransport(), safari: PreviewSafari())
+    bridge.start()
+    return MenuBarView(vm: MenuBarViewModel(service: PreviewEventService()), bridge: bridge)
 }
 
-/// No sockets in the canvas.
+/// No sockets in the canvas: reports one live call, so the mute row shows.
 @MainActor
 private final class PreviewTransport: BridgeTransport {
     var onEvent: ((BridgeEvent) -> Void)?
-    let pipes: Set<Int> = []
-    func start() {}
+    let pipes: Set<Int> = [1]
+    func start() { onEvent?(.message(.pipe(1), .state(tabId: 1, muted: false, canUnmute: true))) }
     func send(_ frame: Data, toPipe id: Int) {}
 }
 
