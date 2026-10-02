@@ -81,10 +81,10 @@
     if (!api.scripting || !api.scripting.registerContentScripts) return;
     for (const site of OPTIONAL) {
       const id = 'vn-' + site.id;
-      let on = false, failed = false;
+      let failed = false;
       try {
         const registered = (await api.scripting.getRegisteredContentScripts()).some((s) => s.id === id);
-        on = await allowed(site);
+        const on = await allowed(site);
         if (on && !registered) {
           try {
             await api.scripting.registerContentScripts([{
@@ -99,7 +99,7 @@
           await api.scripting.unregisterContentScripts({ ids: [id] });
         }
       } catch (e) { /* this browser can't list or unregister scripts: leave it */ }
-      await setUnavailable(site.id, on && failed);
+      await setUnavailable(site.id, failed); // only an allowed site can fail
     }
   }
 
