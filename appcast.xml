@@ -3,6 +3,14 @@
     <channel>
         <title>VisioNext</title>
         <item>
+            <title>0.5.0</title>
+            <pubDate>Fri, 02 Oct 2026 16:00:03 +0200</pubDate>
+            <sparkle:version>8</sparkle:version>
+            <sparkle:shortVersionString>0.5.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/louije/visio-next/releases/download/v0.5.0/VisioNext-0.5.0.zip" length="4544062" type="application/octet-stream" sparkle:edSignature="B4q91+ENnlinGtyfc9k9uxhKqRMWqCR/AmpOfyh8HyvPUX5utBBDHy1DljffW4amOFX1xSR/6u0hPA2Te9t/AQ=="/>
+        </item>
+        <item>
             <title>0.4.0</title>
             <pubDate>Thu, 09 Jul 2026 20:16:47 +0200</pubDate>
             <sparkle:version>7</sparkle:version>
@@ -17,19 +25,6 @@
             <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/louije/visio-next/releases/download/v0.3.0/VisioNext-0.3.0.zip" length="3714334" type="application/octet-stream" sparkle:edSignature="xaiACGGeORZDwQb4Cy3TcnfMp7o4e0gIkToSfEY3I7d6dJBHORSwICQo5UGm9zDY6Yt5p4GZJQ2BGQJOSlv+Ag=="/>
-        </item>
-        <item>
-            <title>0.2.3</title>
-            <pubDate>Mon, 29 Jun 2026 15:57:58 +0200</pubDate>
-            <sparkle:version>5</sparkle:version>
-            <sparkle:shortVersionString>0.2.3</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/louije/visio-next/releases/download/v0.2.3/VisioNext-0.2.3.zip" length="3687222" type="application/octet-stream" sparkle:edSignature="oMedhwnnHq9yD+3qcPXHQL1513Bv1VpqXoNRLIB+akSfSyptpjA/ikFHVpAuqMQP0JJbnNrsENMJltF6Aj/ECQ=="/>
-            <sparkle:deltas>
-                <enclosure url="https://louije.github.io/visio-next/VisioNext5-4.delta" sparkle:deltaFrom="4" length="44802" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="Nwubp+A8Qz1fKXf3t/j+yS/nQ7Zo/rsAMX3GWO+EDSIUTiolVu3JOFb+GWfd6vrkuwX8q+Oggl3B53UyVSndDQ=="/>
-                <enclosure url="https://louije.github.io/visio-next/VisioNext5-3.delta" sparkle:deltaFrom="3" length="44234" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="aIwslFa2iESObluqwLZBO9uUeZUh7O9WxTv/Sn0TdT1bP9eutxrPxQvrTk6mPIE7yqaq+3/wbuIPJNzbOL8hDQ=="/>
-                <enclosure url="https://louije.github.io/visio-next/VisioNext5-2.delta" sparkle:deltaFrom="2" length="1230326" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="dfY4exndAcvNtZlCqWPPB4ajQV7yWRNd7U3RtXC9k1550ppHyHTX0uV4zx36uw2cTCZe9H4qFWxFHnzimqRDAw=="/>
-            </sparkle:deltas>
         </item>
     </channel>
 </rss>
