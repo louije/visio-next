@@ -1,11 +1,10 @@
 import Foundation
+import VisioCore
 
 /// Storage location shared with the widget via the App Group entitlement
-/// (`group.com.meidosem.visionext`, configured in project.yml on both targets).
+/// (`BridgeEndpoint.appGroupID`, configured in project.yml on both targets).
 enum AppGroup {
-    static let suiteName = "group.com.meidosem.visionext"
-
     static var defaults: UserDefaults {
-        UserDefaults(suiteName: suiteName) ?? .standard
+        UserDefaults(suiteName: BridgeEndpoint.appGroupID) ?? .standard
     }
 }

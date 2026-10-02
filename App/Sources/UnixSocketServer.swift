@@ -1,5 +1,6 @@
 import Foundation
 import os
+import VisioCore
 
 /// A Unix-domain stream socket server on the main queue. No protocol knowledge.
 ///
@@ -20,7 +21,7 @@ final class UnixSocketServer {
 
     /// Returns false if the socket could not be served (another live instance, or a syscall failed).
     func start() -> Bool {
-        guard var address = Self.address(for: path) else {
+        guard var address = BridgeEndpoint.address(for: path) else {
             log.error("socket path too long: \(self.path, privacy: .public)")
             return false
         }
@@ -97,17 +98,6 @@ final class UnixSocketServer {
         log.error("\(what) \(self.path, privacy: .public): \(code) \(String(cString: strerror(code)), privacy: .public)")
         if fd >= 0 { close(fd) }
         return false
-    }
-
-    private static func address(for path: String) -> sockaddr_un? {
-        var address = sockaddr_un()
-        address.sun_family = sa_family_t(AF_UNIX)
-        let bytes = path.utf8CString
-        guard bytes.count <= MemoryLayout.size(ofValue: address.sun_path) else { return nil }
-        withUnsafeMutableBytes(of: &address.sun_path) { dest in
-            bytes.withUnsafeBytes { dest.copyMemory(from: $0) }
-        }
-        return address
     }
 }
 
