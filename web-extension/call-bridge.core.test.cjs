@@ -158,3 +158,16 @@ test('core: an old-style boolean marker is treated as an orphan with nothing to 
   h.advance(300);
   assert.equal(h.states().length, 1);
 });
+
+test('core: a press that never took is forgotten once the call ends', () => {
+  const h = setup();
+  h.advance(300);
+  h.page.reflect = false;
+  h.press(true);
+  h.advance(4000); // gave up on this call's controls
+  h.page.state = null; h.mutate(); h.advance(3000); // left the call
+  h.page.reflect = true;
+  h.page.state = { muted: false, canUnmute: true }; h.mutate(); h.advance(300); // a new one
+  h.press(true);
+  assert.equal(h.page.clicks, 2);
+});

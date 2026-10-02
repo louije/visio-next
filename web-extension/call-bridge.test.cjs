@@ -23,12 +23,12 @@ test('planMute skips a repeat for as long as the press is pending, however slow 
   // The core always clears `pending` (matching read, verify, second check, leaving the
   // call), so there's no need for a time limit, and a slow page can't be toggled back.
   const s = { muted: false, canUnmute: true };
-  assert.equal(planMute(s, true, { muted: true, at: 0 }), 'skip');
+  assert.equal(planMute(s, true, { muted: true }), 'skip');
 });
 
 test('planMute is not blocked by a pending press for the opposite target', () => {
   const s = { muted: true, canUnmute: true };
-  assert.equal(planMute(s, false, { muted: true, at: 0 }), 'press');
+  assert.equal(planMute(s, false, { muted: true }), 'press');
 });
 
 test('sameState compares what the app sees', () => {

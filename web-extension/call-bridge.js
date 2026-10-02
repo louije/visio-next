@@ -17,7 +17,7 @@
 
   /**
    * 'press' when a toggle is needed to reach `wantMuted`, else 'skip'. `pending` is
-   * null or { muted, at } for a press the page has not reflected yet: repeating it
+   * null or { muted } for a press the page has not reflected yet: repeating it
    * would toggle back, however long the page takes (the core always clears `pending`:
    * matching read, verify, second check, leaving the call).
    */
@@ -69,8 +69,8 @@
   ];
 
   var last = null;      // last reported { muted, canUnmute }; null = not in a call
-  var pending = null;   // { muted, at } for a press not reflected yet
-  var toggleOff = false; // a click that didn't take: stop clicking on this page
+  var pending = null;   // { muted } for a press not reflected yet
+  var toggleOff = false; // a click that didn't take: stop clicking for the rest of this call
   var dead = false;
   var heartbeat = null;
   var byeTimer = null;
@@ -114,6 +114,7 @@
     if (!last) return;
     clearInterval(heartbeat); heartbeat = null;
     last = null; pending = null;
+    toggleOff = false; // the next call has new controls: give them their own chance
     send({ type: 'bye' });
   }
 
@@ -175,7 +176,7 @@
     var want = !!msg.value;
     if (planMute(provider.read(document), want, pending) !== 'press') return;
     if (!provider.toggle(document)) return;
-    var p = pending = { muted: want, at: Date.now() };
+    var p = pending = { muted: want };
     setTimeout(function () { verify(p); }, VERIFY_MS);
   });
 
