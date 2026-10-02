@@ -1,11 +1,13 @@
-// Background tests: background.js run in a vm with a fake browser API (native port,
-// tabs, permissions, scripting) that records what it is asked to do. Run: node --test
+// Background tests: background.js (and the sites.js it imports) run in a vm with a
+// fake browser API (native port, tabs, permissions, scripting, storage) that records
+// what it is asked to do. Run: node --test
 const { test } = require('node:test');
 const assert = require('node:assert');
 const vm = require('node:vm');
 const fs = require('node:fs');
 
 const SRC = fs.readFileSync(__dirname + '/background.js', 'utf8');
+const read = (file) => fs.readFileSync(__dirname + '/' + file, 'utf8');
 const VISIO = 'https://visio.numerique.gouv.fr/*';
 const MEET = 'https://meet.google.com/*';
 const TEAMS = 'https://teams.microsoft.com/*';
@@ -23,11 +25,13 @@ function event() {
 
 /**
  * tabs: { origin pattern: [tab ids] }; granted: optional origins allowed;
- * registered: content scripts already registered.
+ * registered: content scripts already registered; refuse: ids registration throws for;
+ * stored: storage.local's initial content.
  */
-async function setup({ tabs = {}, granted = [], registered = [] } = {}) {
+async function setup({ tabs = {}, granted = [], registered = [], refuse = [], stored = {} } = {}) {
   const ports = [], sent = [], log = [];
   const allowed = new Set(granted);
+  const storage = plain(stored);
   const chrome = {
     runtime: {
       onMessage: event(), onStartup: event(), onInstalled: event(),
@@ -56,6 +60,7 @@ async function setup({ tabs = {}, granted = [], registered = [] } = {}) {
     scripting: {
       async executeScript({ target, files }) { log.push(['inject', target.tabId, files.join(' ')]); },
       async registerContentScripts(list) {
+        if (list.some((s) => refuse.includes(s.id))) throw new Error('refused');
         for (const s of list) { registered.push(plain(s)); log.push(['register', s.id]); }
       },
       async unregisterContentScripts({ ids }) {
@@ -64,14 +69,22 @@ async function setup({ tabs = {}, granted = [], registered = [] } = {}) {
       },
       async getRegisteredContentScripts() { return registered.slice(); },
     },
+    storage: {
+      local: {
+        async get(key) { return plain({ [key]: storage[key] }); },
+        async set(items) { Object.assign(storage, plain(items)); },
+      },
+    },
   };
-  const ctx = { chrome, console };
+  // A service worker: background.js imports sites.js itself.
+  const ctx = { chrome, console: { warn() {} } };
   ctx.globalThis = ctx;
+  ctx.importScripts = (file) => vm.runInContext(read(file), ctx);
   vm.createContext(ctx);
   vm.runInContext(SRC, ctx);
   await settle();
   return {
-    chrome, ports, sent, log, registered, allowed,
+    chrome, ports, sent, log, registered, allowed, storage,
     fromTab(id, msg) { chrome.runtime.onMessage.fire(msg, { tab: { id } }); },
     async fromApp(msg, port = ports.at(-1)) { port.onMessage.fire(msg); await settle(); },
     ids(registered) { return registered.map((s) => s.id).sort(); },
@@ -188,11 +201,11 @@ test('background: an update re-registers from scratch and injects each open call
   assert.deepEqual(registered.find((s) => s.id === 'vn-meet').js, ['providers/meet.js', 'call-bridge.js']);
 });
 
-test('background: a browser update keeps the registrations', async () => {
-  const h = await setup({ tabs: { [MEET]: [5] }, granted: [MEET], registered: [{ id: 'vn-meet' }] });
+test('background: a browser update keeps the registrations and injects nothing', async () => {
+  const h = await setup({ tabs: { [VISIO]: [7], [MEET]: [5] }, granted: [MEET], registered: [{ id: 'vn-meet' }] });
   h.chrome.runtime.onInstalled.fire({ reason: 'browser_update' });
   await settle();
-  assert.deepEqual(h.log.filter(([what]) => what !== 'inject'), []);
+  assert.deepEqual(h.log, []);
 });
 
 test("background: a revoked site's tabs are told to stop", async () => {

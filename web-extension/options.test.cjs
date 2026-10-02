@@ -1,12 +1,11 @@
-// Options page tests: options.js run in a vm with a fake page and browser API.
+// Options page tests: sites.js + options.js run in a vm with a fake page and browser API.
 // Run: node --test
 const { test } = require('node:test');
 const assert = require('node:assert');
 const vm = require('node:vm');
 const fs = require('node:fs');
 
-const SRC = fs.readFileSync(__dirname + '/options.js', 'utf8');
-const MANIFEST = JSON.parse(fs.readFileSync(__dirname + '/manifest.json', 'utf8'));
+const read = (file) => fs.readFileSync(__dirname + '/' + file, 'utf8');
 const flush = () => new Promise((r) => setImmediate(r));
 
 function setup({ contains, request = async () => true, registered = [] }) {
@@ -27,7 +26,6 @@ function setup({ contains, request = async () => true, registered = [] }) {
     setTimeout: (fn, ms) => timers.push({ fn, ms }),
     Promise,
     chrome: {
-      runtime: { getManifest: () => MANIFEST },
       permissions: {
         contains: (q) => { asked.push(q.origins); return contains(q); },
         request, remove: async () => true,
@@ -37,7 +35,8 @@ function setup({ contains, request = async () => true, registered = [] }) {
   };
   ctx.globalThis = ctx;
   vm.createContext(ctx);
-  vm.runInContext(SRC, ctx);
+  vm.runInContext(read('sites.js'), ctx); // as options.html loads them
+  vm.runInContext(read('options.js'), ctx);
   return {
     boxes, asked,
     async runTimers() { while (timers.length) timers.shift().fn(); await flush(); },

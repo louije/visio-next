@@ -155,6 +155,9 @@ targets:
       - path: ../web-extension/call-bridge.js
         type: file
         buildPhase: resources
+      - path: ../web-extension/sites.js
+        type: file
+        buildPhase: resources
       - path: ../web-extension/background.js
         type: file
         buildPhase: resources

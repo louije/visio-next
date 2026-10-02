@@ -1,7 +1,7 @@
 // The sites are described in three places that must agree: manifest.json (host
-// permissions, the static content script), background.js (VISIO, OPTIONAL: what gets
-// registered and injected) and providers/*.js (which hosts each adapter claims).
-// options.js builds its switches from the manifest. Run: node --test
+// permissions, the static content script), sites.js (VISIO, OPTIONAL: what gets
+// registered and injected, and the options switches) and providers/*.js (which hosts
+// each adapter claims). Run: node --test
 const { test } = require('node:test');
 const assert = require('node:assert');
 const vm = require('node:vm');
@@ -9,20 +9,16 @@ const fs = require('node:fs');
 
 const MANIFEST = JSON.parse(fs.readFileSync(__dirname + '/manifest.json', 'utf8'));
 
-/** VISIO and OPTIONAL as background.js defines them (run in a vm with a stub API). */
-function backgroundSites() {
-  const ev = () => ({ addListener() {} });
-  const chrome = {
-    runtime: { onMessage: ev(), onStartup: ev(), onInstalled: ev() },
-    tabs: { onRemoved: ev() },
-    permissions: { onAdded: ev(), onRemoved: ev() },
-  };
-  const ctx = { chrome, console };
+const read = (file) => fs.readFileSync(__dirname + '/' + file, 'utf8');
+
+/** VISIO and OPTIONAL as sites.js defines them (run in a vm). */
+function siteLists() {
+  const ctx = {};
   ctx.globalThis = ctx;
   vm.createContext(ctx);
-  vm.runInContext(fs.readFileSync(__dirname + '/background.js', 'utf8'), ctx);
+  vm.runInContext(read('sites.js'), ctx);
   // Plain copies: deepEqual checks prototypes, and the vm has its own Array/Object.
-  return JSON.parse(vm.runInContext('JSON.stringify({ visio: VISIO, optional: OPTIONAL })', ctx));
+  return JSON.parse(vm.runInContext('JSON.stringify({ visio: VNSites.VISIO, optional: VNSites.OPTIONAL })', ctx));
 }
 
 /** The origins options.js asks about for each switch, by site. */
@@ -35,20 +31,20 @@ function optionsOrigins() {
     document: { getElementById: () => ({ querySelectorAll: () => boxes }) },
     Promise,
     chrome: {
-      runtime: { getManifest: () => MANIFEST },
       permissions: { request() {}, contains(q) { asked.push(q.origins); return new Promise(() => {}); } },
       scripting: { registerContentScripts() {} },
     },
   };
   ctx.globalThis = ctx;
   vm.createContext(ctx);
-  vm.runInContext(fs.readFileSync(__dirname + '/options.js', 'utf8'), ctx);
+  vm.runInContext(read('sites.js'), ctx); // as options.html loads them
+  vm.runInContext(read('options.js'), ctx);
   // One question per switch, in page order.
   return JSON.parse(JSON.stringify(Object.fromEntries(boxes.map((box, k) => [box.dataset.site, asked[k]]))));
 }
 
-const { visio: VISIO, optional: OPTIONAL } = backgroundSites();
-const SITES = [Object.assign({ id: 'visio' }, VISIO), ...OPTIONAL];
+const { visio: VISIO, optional: OPTIONAL } = siteLists();
+const SITES = [VISIO, ...OPTIONAL];
 const sorted = (list) => list.slice().sort();
 const hostOf = (origin) => new URL(origin.replace(/\*$/, '')).host;
 
@@ -92,4 +88,11 @@ test('sites: the options switches ask for the same origins as the background reg
   const asked = optionsOrigins();
   assert.deepEqual(Object.keys(asked), OPTIONAL.map((s) => s.id));
   for (const site of OPTIONAL) assert.deepEqual(asked[site.id], site.origins, site.id);
+});
+
+test('sites: sites.js is loaded before what uses it, everywhere it ships', () => {
+  assert.deepEqual(MANIFEST.background.scripts, ['sites.js', 'background.js']); // Firefox
+  assert.match(read('background.js'), /importScripts\('sites\.js'\)/); // service workers
+  assert.match(read('options.html'), /<script src="sites\.js"><\/script>\s*<script src="options\.js">/);
+  assert.match(read('package.mjs'), /'sites\.js'/);
 });

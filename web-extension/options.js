@@ -1,6 +1,6 @@
 // Options page: one-time setup. The site switches ask the browser for access to
 // Google Meet / Teams (optional host permissions); the background registers the call
-// bridge there once allowed (background.js).
+// bridge there once allowed (sites.js, loaded before this file).
 (function () {
   'use strict';
   var api = (typeof browser !== 'undefined') ? browser
@@ -13,13 +13,10 @@
     return;
   }
 
-  // Each switch's origins, picked by host from the manifest's optional_host_permissions
-  // (the one list; background.js's OPTIONAL must match it: sites.test.cjs). Teams needs
-  // all its origins: permissions are all-or-nothing on the array.
-  var HOSTS = { meet: /^meet\.google\.com$/, teams: /^teams\./ };
-  var optional = api.runtime.getManifest().optional_host_permissions || [];
-  function originsFor(site) {
-    return optional.filter(function (origin) { return HOSTS[site].test(origin.split('/')[2] || ''); });
+  var OPTIONAL = (globalThis.VNSites && globalThis.VNSites.OPTIONAL) || [];
+  function originsFor(id) {
+    for (var k = 0; k < OPTIONAL.length; k++) if (OPTIONAL[k].id === id) return OPTIONAL[k].origins;
+    return [];
   }
   /**
    * A browser may grant the access yet refuse to register the site's script (the

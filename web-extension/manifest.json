@@ -30,7 +30,7 @@
   ],
   "background": {
     "service_worker": "background.js",
-    "scripts": ["background.js"]
+    "scripts": ["sites.js", "background.js"]
   },
   "action": {
     "default_title": "Adaptive Visio layout",
