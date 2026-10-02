@@ -8,7 +8,7 @@ struct SettingsView: View {
     var onChange: () -> Void
     @State private var tab: Tab = .general
 
-    private enum Tab { case general, calendars, providers }
+    private enum Tab { case general, calendars, providers, browserExtension }
 
     var body: some View {
         TabView(selection: $tab) {
@@ -21,6 +21,9 @@ struct SettingsView: View {
             ProvidersSettings(onChange: onChange)
                 .tabItem { Label("Services visio", systemImage: "video") }
                 .tag(Tab.providers)
+            ExtensionSettings()
+                .tabItem { Label("Extension", systemImage: "puzzlepiece.extension") }
+                .tag(Tab.browserExtension)
         }
         .frame(width: 480, height: 450)
         // Always show Général when the window opens (don't restore the last tab).
@@ -155,6 +158,47 @@ private struct ProvidersSettings: View {
     private func persist() {
         settings.save(to: AppGroup.defaults)
         onChange()
+    }
+}
+
+// MARK: - Browser extension
+
+/// Where to get the browser extension: the global mute only reaches calls in browsers
+/// that have it.
+private struct ExtensionSettings: View {
+    @State private var safariEnabled: Bool?
+
+    var body: some View {
+        Form {
+            Text("L’extension VisioNext adapte la mise en page de Visio et permet au raccourci de couper le micro dans vos visios du navigateur : Visio, et Google Meet ou Teams si vous les autorisez dans ses réglages.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            Section("Safari") {
+                LabeledContent("Extension") {
+                    switch safariEnabled {
+                    case true?: Text("Activée")
+                    case false?: Text("Désactivée").foregroundStyle(.orange)
+                    case nil: Text("—").foregroundStyle(.secondary)
+                    }
+                }
+                Button("Ouvrir les réglages de Safari") { BrowserExtension.openSafariSettings() }
+            }
+
+            Section("Chrome, Edge, Brave, Arc…") {
+                Button("Installer depuis le Chrome Web Store") { BrowserExtension.openChromeWebStore() }
+            }
+        }
+        .formStyle(.grouped)
+        .task { await refresh() }
+        // Coming back from Safari's settings: show the new state.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await refresh() }
+        }
+    }
+
+    private func refresh() async {
+        safariEnabled = await BrowserExtension.isSafariExtensionEnabled()
     }
 }
 
