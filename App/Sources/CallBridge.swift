@@ -31,8 +31,6 @@ final class CallBridge: ObservableObject {
     /// Where the calls stand: drives the menu item and the mic's tooltip. nil = no call.
     var muteState: MuteState? { MutePolicy.state(for: sessions) }
 
-    static let safariExtensionID = "com.meidosem.visionext.safari"
-
     static var safariSocketPath: String? {
         FileManager.default
             .containerURL(forSecurityApplicationGroupIdentifier: AppGroup.suiteName)?
@@ -98,7 +96,7 @@ final class CallBridge: ObservableObject {
         }
         if toSafari {
             SFSafariApplication.dispatchMessage(withName: "setMuted",
-                                                toExtensionWithIdentifier: Self.safariExtensionID,
+                                                toExtensionWithIdentifier: BrowserExtension.safariExtensionID,
                                                 userInfo: command.userInfo) { [log] error in
                 if let error { log.error("dispatchMessage: \(error.localizedDescription, privacy: .public)") }
             }

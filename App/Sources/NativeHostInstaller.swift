@@ -6,9 +6,9 @@ import VisioCore
 /// app. Runs at launch; only touches browsers whose support folder exists, and only
 /// rewrites a manifest whose content changed (e.g. the app moved).
 enum NativeHostInstaller {
-    /// Unpacked dev id, pinned by `key` in web-extension/manifest.json. Add the Chrome
-    /// Web Store id here once the extension is published.
-    static let chromeExtensionIDs = ["fhbbknecepkblnbamdgflfjaakijkfhp"]
+    /// The Chrome Web Store copy, and the unpacked dev copy (id pinned by `key` in
+    /// web-extension/manifest.json).
+    static let chromeExtensionIDs = [BrowserExtension.chromeWebStoreID, "fhbbknecepkblnbamdgflfjaakijkfhp"]
     static let firefoxExtensionID = "visio-meet-layout@meidosem.com"
 
     /// Relative to ~/Library/Application Support.
