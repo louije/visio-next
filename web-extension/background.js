@@ -28,7 +28,7 @@ const OPTIONAL = [
   },
 ];
 
-const sessions = new Map(); // tabId -> { muted, canUnmute }; only drives the port lifecycle
+const sessions = new Set(); // tab ids with a call; only drives the port lifecycle
 let port = null;
 
 async function allowed(site) {
@@ -106,24 +106,27 @@ async function onAppMessage(raw) {
     if (msg.tabId != null) return tell(msg.tabId, msg.value);
     const origins = (await activeSites()).flatMap((site) => site.origins);
     // Also known sessions: a call on a site revoked mid-call is still muted.
-    const ids = new Set([...(await tabIdsFor(origins)), ...sessions.keys()]);
+    const ids = new Set([...(await tabIdsFor(origins)), ...sessions]);
     for (const id of ids) tell(id, msg.value);
   } catch (e) { /* tab gone or query failed */ }
 }
 
 function ensurePort() {
   if (port) return port;
+  let p;
   try {
-    port = api.runtime.connectNative(HOST);
+    p = api.runtime.connectNative(HOST);
   } catch (e) {
     return null;
   }
-  port.onMessage.addListener(onAppMessage);
-  port.onDisconnect.addListener(() => {
+  port = p;
+  p.onMessage.addListener(onAppMessage);
+  p.onDisconnect.addListener(() => {
     void api.runtime.lastError; // app not running: Chrome reports it here
-    port = null;
+    // A late event from a port already replaced must not drop the new one.
+    if (port === p) port = null;
   });
-  return port;
+  return p;
 }
 
 function post(msg) {
@@ -132,13 +135,16 @@ function post(msg) {
   try {
     p.postMessage(msg);
   } catch (e) {
-    port = null; // disconnected under us; the next report reconnects
+    if (port === p) port = null; // disconnected under us; the next report reconnects
   }
 }
 
 function report(tabId, msg) {
+  // A bye for a call the app never heard of (tab closed after the worker restarted…):
+  // nothing to tell, and connecting would launch the native host for nothing.
+  if (msg.type === 'bye' && !sessions.has(tabId) && !port) return;
   if (msg.type === 'bye') sessions.delete(tabId);
-  else sessions.set(tabId, { muted: msg.muted, canUnmute: msg.canUnmute });
+  else sessions.add(tabId);
 
   post({ ...msg, tabId });
 
@@ -181,8 +187,9 @@ api.runtime.onInstalled.addListener(async (details) => {
   }
   await syncSites();
   // An update orphans the call bridges already running in open call tabs (they stop
-  // themselves): start fresh ones so calls in progress stay muteable.
-  for (const site of await activeSites()) await inject(site).catch(() => {});
+  // themselves): start fresh ones so calls in progress stay muteable. Visio only: the
+  // sync above re-registered the opted-in sites, which injects their open tabs.
+  await inject(VISIO).catch(() => {});
 });
 
 syncSites(); // once per worker start
