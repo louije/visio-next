@@ -208,6 +208,16 @@ test('background: a browser update keeps the registrations and injects nothing',
   assert.deepEqual(h.log, []);
 });
 
+test('background: records the allowed sites this browser refuses to register', async () => {
+  const h = await setup({ granted: [MEET, ...TEAMS_ALL], refuse: ['vn-meet'], stored: { unavailable: ['teams'] } });
+  assert.deepEqual(h.storage.unavailable, ['meet']); // teams registered: no longer listed
+  assert.deepEqual(h.ids(h.registered), ['vn-teams']);
+  h.allowed.delete(MEET);
+  h.chrome.permissions.onRemoved.fire({ origins: [MEET] });
+  await settle();
+  assert.deepEqual(h.storage.unavailable, []);
+});
+
 test("background: a revoked site's tabs are told to stop", async () => {
   const h = await setup({ tabs: { [VISIO]: [7], [MEET]: [5] }, granted: [MEET] });
   h.allowed.delete(MEET);

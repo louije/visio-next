@@ -18,45 +18,53 @@
     for (var k = 0; k < OPTIONAL.length; k++) if (OPTIONAL[k].id === id) return OPTIONAL[k].origins;
     return [];
   }
-  /**
-   * A browser may grant the access yet refuse to register the site's script (the
-   * background then can't start there): say so next to the switch rather than show
-   * one that does nothing. Checked once the background has had time to register.
-   */
-  function checkRegistered(box) {
-    var site = box.dataset.site;
-    var note = box.parentNode.querySelector('.unavailable');
-    setTimeout(function () {
-      if (!box.checked) return;
-      Promise.resolve(api.scripting.getRegisteredContentScripts()).then(function (list) {
-        var ok = (list || []).some(function (s) { return s.id === 'vn-' + site; });
-        note.hidden = ok;
-        if (!ok) console.warn('VisioNext: ' + site + ' allowed, but this browser did not register its script');
-      }, function () {});
-    }, 500);
+
+  var boxes = [].slice.call(section.querySelectorAll('[data-site]'));
+
+  // Sites allowed but that this browser refused to register (the background records
+  // them in storage.local.unavailable): say so next to a switch that is on, rather
+  // than show one that does nothing.
+  var unavailable = [];
+  function showNotes() {
+    boxes.forEach(function (box) {
+      box.parentNode.querySelector('.unavailable').hidden =
+        !box.checked || unavailable.indexOf(box.dataset.site) < 0;
+    });
+  }
+  if (api.storage && api.storage.local) {
+    Promise.resolve(api.storage.local.get('unavailable')).then(function (r) {
+      unavailable = (r && r.unavailable) || [];
+      showNotes();
+    }, function () {});
+    api.storage.onChanged.addListener(function (changes, area) {
+      if (area !== 'local' || !changes.unavailable) return;
+      unavailable = changes.unavailable.newValue || [];
+      showNotes();
+    });
   }
 
-  section.querySelectorAll('[data-site]').forEach(function (box) {
+  boxes.forEach(function (box) {
     var origins = originsFor(box.dataset.site);
     // Disabled until the real state is known: a click before that would act on a guess.
     box.disabled = true;
+    if (!origins.length) { // a switch with no site behind it: never usable
+      console.warn('VisioNext: no origins for the ' + box.dataset.site + ' switch');
+      return;
+    }
     Promise.resolve(api.permissions.contains({ origins: origins })).then(function (on) {
       box.checked = on;
       box.disabled = false;
-      if (on) checkRegistered(box);
+      showNotes();
     }, function () { box.disabled = false; });
     box.addEventListener('change', function () {
       // Called straight from the click: browsers only prompt from a user gesture.
       var op = box.checked
         ? api.permissions.request({ origins: origins })
         : api.permissions.remove({ origins: origins });
-      if (!box.checked) box.parentNode.querySelector('.unavailable').hidden = true;
+      showNotes();
       Promise.resolve(op).then(
-        function (ok) {
-          if (!ok) box.checked = !box.checked;
-          else if (box.checked) checkRegistered(box);
-        },
-        function () { box.checked = !box.checked; }
+        function (ok) { if (!ok) box.checked = !box.checked; showNotes(); },
+        function () { box.checked = !box.checked; showNotes(); }
       );
     });
   });

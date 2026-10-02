@@ -62,23 +62,44 @@
     } catch (e) { /* query failed */ }
   }
 
+  /**
+   * Records in storage.local.unavailable (site ids) the allowed sites this browser
+   * refused to register, for the options page to say so next to their switch.
+   */
+  async function setUnavailable(siteId, unavailable) {
+    if (!api.storage || !api.storage.local) return;
+    try {
+      const list = (await api.storage.local.get('unavailable')).unavailable || [];
+      if (list.includes(siteId) === unavailable) return;
+      const next = unavailable ? [...list, siteId] : list.filter((id) => id !== siteId);
+      await api.storage.local.set({ unavailable: next });
+    } catch (e) { /* storage unavailable: the note just won't show */ }
+  }
+
   /** Register the content scripts of opted-in sites, unregister the others. */
   async function doSync() {
     if (!api.scripting || !api.scripting.registerContentScripts) return;
     for (const site of OPTIONAL) {
       const id = 'vn-' + site.id;
+      let on = false, failed = false;
       try {
         const registered = (await api.scripting.getRegisteredContentScripts()).some((s) => s.id === id);
-        const on = await allowed(site);
+        on = await allowed(site);
         if (on && !registered) {
-          await api.scripting.registerContentScripts([{
-            id, matches: site.origins, js: site.js, runAt: 'document_idle', persistAcrossSessions: true,
-          }]);
-          await inject(site).catch(() => {}); // tabs opened before the permission was granted
+          try {
+            await api.scripting.registerContentScripts([{
+              id, matches: site.origins, js: site.js, runAt: 'document_idle', persistAcrossSessions: true,
+            }]);
+          } catch (e) {
+            failed = true; // allowed, but this browser can't register scripts there
+            console.warn('VisioNext: could not register the ' + site.id + ' script', e);
+          }
+          if (!failed) await inject(site).catch(() => {}); // tabs opened before the permission was granted
         } else if (!on && registered) {
           await api.scripting.unregisterContentScripts({ ids: [id] });
         }
-      } catch (e) { /* this browser can't register scripts: the site stays off */ }
+      } catch (e) { /* this browser can't list or unregister scripts: leave it */ }
+      await setUnavailable(site.id, on && failed);
     }
   }
 
