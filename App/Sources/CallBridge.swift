@@ -37,9 +37,21 @@ final class CallBridge: ObservableObject {
             .appendingPathComponent("bridge.sock").path
     }
 
-    /// Must match `$(getconf DARWIN_USER_TEMP_DIR)visionext-bridge.sock` in the host script.
+    /// Must match `$(getconf DARWIN_USER_TEMP_DIR)visionext-bridge.sock` in the host script,
+    /// hence the same `confstr` rather than `NSTemporaryDirectory()` (which honors TMPDIR).
     static var pipeSocketPath: String {
-        NSTemporaryDirectory() + "visionext-bridge.sock"
+        userTempDirectory + "visionext-bridge.sock"
+    }
+
+    private static var userTempDirectory: String {
+        let size = confstr(_CS_DARWIN_USER_TEMP_DIR, nil, 0)
+        if size > 0 {
+            var buffer = [CChar](repeating: 0, count: size)
+            if confstr(_CS_DARWIN_USER_TEMP_DIR, &buffer, size) > 0 {
+                return buffer.withUnsafeBufferPointer { String(cString: $0.baseAddress!) }
+            }
+        }
+        return NSTemporaryDirectory()
     }
 
     private let log = Logger(subsystem: "com.meidosem.visionext", category: "bridge")
