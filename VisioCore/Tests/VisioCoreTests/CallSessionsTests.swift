@@ -53,12 +53,14 @@ private let t0 = Date(timeIntervalSince1970: 1_000_000)
 
 @Test func heartbeatsKeepALiveCallFromExpiring() {
     var s = CallSessions()
-    for beat in 0 ..< 10 {   // every 30 s, as the extensions do
+    let key = CallSessions.Key(channel: .safari, tabId: 1)
+    for beat in 0 ..< 10 {   // every 30 s, as the extensions do, well past the timeout
         let now = t0.addingTimeInterval(Double(beat) * 30)
         s.apply(.state(tabId: 1, muted: false, canUnmute: true), from: .safari, at: now)
+        #expect(s.sessions[key]?.lastSeen == now)
         s.expire(now: now.addingTimeInterval(29))
+        #expect(s.sessions.count == 1)
     }
-    #expect(s.sessions.count == 1)
 }
 
 @Test func byeOnlyEndsTheTabOnItsOwnChannel() {
