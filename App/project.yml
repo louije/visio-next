@@ -168,7 +168,7 @@ targets:
     info:
       path: SafariExtension/Info.plist
       properties:
-        CFBundleDisplayName: "Meet multi-column strip"
+        CFBundleDisplayName: VisioNext
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
