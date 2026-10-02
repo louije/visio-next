@@ -169,7 +169,24 @@ struct MeetingRow: View {
 }
 
 #Preview("Menu bar popover") {
-    MenuBarView(vm: MenuBarViewModel(service: PreviewEventService()), bridge: CallBridge())
+    MenuBarView(vm: MenuBarViewModel(service: PreviewEventService()),
+                bridge: CallBridge(transport: PreviewTransport(), safari: PreviewSafari()))
+}
+
+/// No sockets in the canvas.
+@MainActor
+private final class PreviewTransport: BridgeTransport {
+    var onEvent: ((BridgeEvent) -> Void)?
+    let pipes: Set<Int> = []
+    func start() {}
+    func send(_ frame: Data, toPipe id: Int) {}
+}
+
+@MainActor
+private final class PreviewSafari: SafariMessaging {
+    let isRunning = false
+    func dispatch(_ command: MuteCommand) {}
+    func observeQuit(_ onQuit: @escaping @MainActor () -> Void) {}
 }
 
 /// A canned `EventProviding` so the full `MenuBarView` renders in the canvas without

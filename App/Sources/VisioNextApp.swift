@@ -6,7 +6,7 @@ import VisioCore
 struct VisioNextApp: App {
     @StateObject private var vm = MenuBarViewModel()
     @StateObject private var updater = UpdaterViewModel()
-    @StateObject private var bridge = CallBridge()
+    @StateObject private var bridge = CallBridge.live()
 
     init() {
         // Before any socket exists: a write to a bridge connection whose peer has gone
