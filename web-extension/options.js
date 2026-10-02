@@ -6,17 +6,20 @@
   var api = (typeof browser !== 'undefined') ? browser
     : (typeof chrome !== 'undefined') ? chrome : null;
 
-  // Keep in sync with OPTIONAL in background.js.
-  var SITES = {
-    meet: ['https://meet.google.com/*'],
-    // Teams needs all three origins: permissions are all-or-nothing on the array.
-    teams: ['https://teams.microsoft.com/*', 'https://teams.cloud.microsoft/*', 'https://teams.live.com/*'],
-  };
   var section = document.getElementById('sites');
   if (!api || !api.permissions || !api.permissions.request || !api.scripting || !api.scripting.registerContentScripts) {
     section.hidden = true;
     document.getElementById('unsupported').hidden = false;
     return;
+  }
+
+  // Each switch's origins, picked by host from the manifest's optional_host_permissions
+  // (the one list; background.js's OPTIONAL must match it: sites.test.cjs). Teams needs
+  // all its origins: permissions are all-or-nothing on the array.
+  var HOSTS = { meet: /^meet\.google\.com$/, teams: /^teams\./ };
+  var optional = api.runtime.getManifest().optional_host_permissions || [];
+  function originsFor(site) {
+    return optional.filter(function (origin) { return HOSTS[site].test(origin.split('/')[2] || ''); });
   }
   /**
    * A browser may grant the access yet refuse to register the site's script (the
@@ -37,7 +40,7 @@
   }
 
   section.querySelectorAll('[data-site]').forEach(function (box) {
-    var origins = SITES[box.dataset.site];
+    var origins = originsFor(box.dataset.site);
     // Disabled until the real state is known: a click before that would act on a guess.
     box.disabled = true;
     Promise.resolve(api.permissions.contains({ origins: origins })).then(function (on) {

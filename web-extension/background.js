@@ -18,7 +18,11 @@ const api = globalThis.browser ?? globalThis.chrome;
 const HOST = 'com.meidosem.visionext';
 
 const VISIO = { origins: ['https://visio.numerique.gouv.fr/*'], js: ['providers/visio.js', 'call-bridge.js'] };
-/** Sites the user opts into from the options page. Keep origins in sync with options.js. */
+/**
+ * Sites the user opts into from the options page. Their origins together must equal the
+ * manifest's optional_host_permissions, from which options.js builds its switches
+ * (checked by sites.test.cjs, with VISIO against the static content script).
+ */
 const OPTIONAL = [
   { id: 'meet', origins: ['https://meet.google.com/*'], js: ['providers/meet.js', 'call-bridge.js'] },
   {
