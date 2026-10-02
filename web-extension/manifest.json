@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VisioNext — adaptive Visio layout",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Adaptive participant layout on Visio, plus a global mute for your browser calls with the VisioNext macOS app.",
   "homepage_url": "https://github.com/louije/visio-next",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAks2dHclOjJNR8HUK5eEI+bkCEPxZEclZLUfUojh/RwLizcMVUnRAtnBEn/aorPbTzvi0vU9+O4lyUcms5QwipdrNIN61uIMntYjy8TTXu958ubOHL7v8Fd7fDBnOHh+mD01+sL4Oj8LQ2Kd4f/d4bAhWLKr5lEAGf1tKZUgtsWSOrm6Q/eNML3Fgi2CdBR4UMatjuJMGGaxBfNeO2X7+xa0k1XCXBy5oz+yhdTduiYB3UEK3DrPXYRmjLdIDXCjfUxgmuF0rP7GDEGT2Cloj0RUbc4/oQZ7GVilugBFkRnR2SZEAq0NFn/6O2clFnzd95fDpeZaCzoySWaFfrMjWlwIDAQAB",
