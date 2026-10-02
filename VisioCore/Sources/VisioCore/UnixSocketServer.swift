@@ -1,26 +1,29 @@
 import Foundation
 import os
-import VisioCore
 
 /// A Unix-domain stream socket server on the main queue. No protocol knowledge.
 ///
 /// Built on BSD sockets rather than `NWListener`, which never delivers connections whose
 /// client writes and closes at once (exactly what the Safari extension's one-shot client does).
 @MainActor
-final class UnixSocketServer {
+public final class UnixSocketServer {
     private let path: String
     private let log: Logger
     private let onAccept: (UnixSocketConnection) -> Void
     private var source: DispatchSourceRead?
 
-    init(path: String, log: Logger, onAccept: @escaping (UnixSocketConnection) -> Void) {
+    public init(path: String, log: Logger, onAccept: @escaping (UnixSocketConnection) -> Void) {
         self.path = path
         self.log = log
         self.onAccept = onAccept
     }
 
+    isolated deinit {
+        stop()
+    }
+
     /// Returns false if the socket could not be served (another live instance, or a syscall failed).
-    func start() -> Bool {
+    public func start() -> Bool {
         guard var address = BridgeEndpoint.address(for: path) else {
             log.error("socket path too long: \(self.path, privacy: .public)")
             return false
@@ -62,6 +65,13 @@ final class UnixSocketServer {
         return true
     }
 
+    /// Stops accepting (and closes the listening fd). Open connections are left alone, and
+    /// the socket file stays: the next `start()` on the path reclaims it.
+    public func stop() {
+        source?.cancel()
+        source = nil
+    }
+
     private func acceptPending(on listener: Int32) {
         while true {
             let client = accept(listener, nil, nil)
@@ -81,8 +91,8 @@ final class UnixSocketServer {
                     return
                 }
             }
-            // Fails with EINVAL when the peer already closed; harmless, since the app ignores
-            // SIGPIPE process-wide (VisioNextApp.init) and the write then just gets EPIPE.
+            // Fails with EINVAL when the peer already closed; harmless as long as the process
+            // ignores SIGPIPE (the app does, at launch): the write then just gets EPIPE.
             var on: Int32 = 1
             if setsockopt(client, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size)) != 0 {
                 let code = errno
@@ -108,9 +118,10 @@ final class UnixSocketServer {
 /// An open connection keeps itself alive (its read source captures `self` strongly, like
 /// NWConnection) until `close()` breaks the cycle.
 @MainActor
-final class UnixSocketConnection {
-    var onData: ((Data) -> Void)?
-    var onClose: (() -> Void)?
+public final class UnixSocketConnection {
+    public var onData: ((Data) -> Void)?
+    /// Called once, when the connection closes from either side.
+    public var onClose: (() -> Void)?
 
     private var source: DispatchSourceRead?
     private var fd: Int32
@@ -145,7 +156,7 @@ final class UnixSocketConnection {
         }
     }
 
-    func write(_ data: Data) {
+    public func write(_ data: Data) {
         guard source != nil else { return }
         var offset = 0
         while offset < data.count {
@@ -166,7 +177,7 @@ final class UnixSocketConnection {
         }
     }
 
-    func close() {
+    public func close() {
         guard let source else { return }
         self.source = nil
         source.cancel()   // its cancel handler closes the fd
