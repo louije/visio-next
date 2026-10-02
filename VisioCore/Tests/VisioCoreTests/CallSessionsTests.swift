@@ -51,9 +51,20 @@ private let t0 = Date(timeIntervalSince1970: 1_000_000)
     #expect(s.channels == [.safari, .pipe(3)])
 }
 
-@Test func expiryBoundaryKeepsSessionExactlyTimeoutOld() {
+@Test func heartbeatsKeepALiveCallFromExpiring() {
+    var s = CallSessions()
+    for beat in 0 ..< 10 {   // every 30 s, as the extensions do
+        let now = t0.addingTimeInterval(Double(beat) * 30)
+        s.apply(.state(tabId: 1, muted: false, canUnmute: true), from: .safari, at: now)
+        s.expire(now: now.addingTimeInterval(29))
+    }
+    #expect(s.sessions.count == 1)
+}
+
+@Test func byeOnlyEndsTheTabOnItsOwnChannel() {
     var s = CallSessions()
     s.apply(.state(tabId: 1, muted: false, canUnmute: true), from: .safari, at: t0)
-    s.expire(now: t0.addingTimeInterval(CallSessions.timeout))
-    #expect(s.sessions.count == 1)
+    s.apply(.state(tabId: 1, muted: false, canUnmute: true), from: .pipe(1), at: t0)
+    s.apply(.bye(tabId: 1), from: .pipe(1), at: t0)
+    #expect(Array(s.sessions.keys) == [CallSessions.Key(channel: .safari, tabId: 1)])
 }

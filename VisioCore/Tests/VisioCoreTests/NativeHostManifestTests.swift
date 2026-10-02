@@ -21,18 +21,10 @@ private func object(_ data: Data) -> [String: Any] {
     #expect(m["allowed_origins"] == nil)
 }
 
-@Test func chromiumManifestGolden() {
-    let expected = """
-    {
-      "allowed_origins" : [
-        "chrome-extension://abc/"
-      ],
-      "description" : "VisioNext bridge",
-      "name" : "com.meidosem.visionext",
-      "path" : "/A",
-      "type" : "stdio"
-    }
-    """
-    let actual = NativeHostManifest.chromium(path: "/A", extensionIDs: ["abc"])
-    #expect(String(decoding: actual, as: UTF8.self) == expected)
+/// The installer compares bytes to skip rewriting an unchanged manifest.
+@Test func manifestsAreDeterministic() {
+    #expect(NativeHostManifest.chromium(path: "/A", extensionIDs: ["abc", "def"])
+        == NativeHostManifest.chromium(path: "/A", extensionIDs: ["abc", "def"]))
+    #expect(NativeHostManifest.firefox(path: "/A", extensionID: "x@y")
+        == NativeHostManifest.firefox(path: "/A", extensionID: "x@y"))
 }

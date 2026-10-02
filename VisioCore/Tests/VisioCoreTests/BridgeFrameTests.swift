@@ -22,17 +22,17 @@ import Foundation
     #expect(try decoder.feed(frame.dropFirst(5)) == [Data(#"{"a":1}"#.utf8)])
 }
 
-@Test func decoderHandlesLengthsAbove255() throws {
-    var decoder = BridgeFrame.Decoder()
-    let body = Data(repeating: 0x61, count: 300)
-    #expect(try decoder.feed(BridgeFrame.encode(body)) == [body])
-}
-
 @Test func decoderRejectsTooLongHeader() {
     var decoder = BridgeFrame.Decoder()
     let n = BridgeFrame.maxLength + 1
     let header = Data([UInt8(n & 0xFF), UInt8(n >> 8 & 0xFF), UInt8(n >> 16 & 0xFF), UInt8(n >> 24 & 0xFF)])
     #expect(throws: BridgeFrame.DecodeError.frameTooLong(n)) { try decoder.feed(header) }
+}
+
+@Test func decoderAcceptsAFrameOfExactlyMaxLength() throws {
+    var decoder = BridgeFrame.Decoder()
+    let body = Data(repeating: 0x61, count: BridgeFrame.maxLength)
+    #expect(try decoder.feed(BridgeFrame.encode(body)) == [body])
 }
 
 @Test func decoderAcceptsHandWrittenHeader() throws {

@@ -16,6 +16,16 @@ import Foundation
     #expect(BridgeMessage(json: Data(#"{"type":"bye","tabId":3}"#.utf8)) == .bye(tabId: 3))
 }
 
+@Test func ignoresExtraFields() {
+    let json = Data(#"{"type":"state","tabId":7,"muted":true,"canUnmute":true,"site":"meet","v":{"a":1}}"#.utf8)
+    #expect(BridgeMessage(json: json) == .state(tabId: 7, muted: true, canUnmute: true))
+}
+
+@Test func rejectsAMissingOrNonNumericTabId() {
+    #expect(BridgeMessage(json: Data(#"{"type":"state","muted":true}"#.utf8)) == nil)
+    #expect(BridgeMessage(json: Data(#"{"type":"bye","tabId":"7"}"#.utf8)) == nil)
+}
+
 @Test func rejectsUnknownOrMalformed() {
     #expect(BridgeMessage(json: Data(#"{"type":"hello","tabId":1}"#.utf8)) == nil)
     #expect(BridgeMessage(json: Data(#"{"type":"state","tabId":1}"#.utf8)) == nil)   // no muted
