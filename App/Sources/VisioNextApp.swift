@@ -8,6 +8,13 @@ struct VisioNextApp: App {
     @StateObject private var updater = UpdaterViewModel()
     @StateObject private var bridge = CallBridge()
 
+    init() {
+        // Before any socket exists: a write to a bridge connection whose peer has gone
+        // must fail with EPIPE, not kill the app. SO_NOSIGPIPE alone isn't enough, as
+        // setsockopt fails on a connection the peer closed before it was accepted.
+        signal(SIGPIPE, SIG_IGN)
+    }
+
     var body: some Scene {
         MenuBarExtra {
             MenuBarView(vm: vm, bridge: bridge)

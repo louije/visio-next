@@ -30,6 +30,11 @@ enum BridgeClient {
         }
         guard connected == 0 else { return }
 
+        // If the app drops the connection, the write fails with EPIPE instead of a SIGPIPE
+        // that would kill the extension process.
+        var on: Int32 = 1
+        _ = setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+
         let frame = BridgeFrame.encode(json)
         _ = frame.withUnsafeBytes { write(fd, $0.baseAddress, $0.count) }
     }
