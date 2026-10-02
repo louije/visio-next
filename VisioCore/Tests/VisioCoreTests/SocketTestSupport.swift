@@ -36,8 +36,10 @@ func connectClient(to path: String) throws -> Int32 {
     return fd
 }
 
+/// MSG_NOSIGNAL like the server's writes, so a client writing to a gone server can't
+/// kill the test run with SIGPIPE (the tests don't ignore it: that would hide a server regression).
 func send(_ data: Data, on fd: Int32) {
-    _ = data.withUnsafeBytes { write(fd, $0.baseAddress, $0.count) }
+    _ = data.withUnsafeBytes { Darwin.send(fd, $0.baseAddress, $0.count, MSG_NOSIGNAL) }
 }
 
 /// Up to `count` bytes, waiting at most 2 s for the first ones.

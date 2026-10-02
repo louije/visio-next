@@ -25,10 +25,6 @@ final class AppController: ObservableObject {
     }
 
     private func launch() {
-        // Before any socket exists: a write to a bridge connection whose peer has gone
-        // must fail with EPIPE, not kill the app. SO_NOSIGPIPE alone isn't enough, as
-        // setsockopt fails on a connection the peer closed before it was accepted.
-        signal(SIGPIPE, SIG_IGN)
         // Not from Xcode runs or previews: they'd point every browser's host at DerivedData,
         // hijacking the installed app. Scripts/install.sh builds Release, so it still installs.
         #if !DEBUG

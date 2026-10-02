@@ -7,6 +7,12 @@ struct VisioNextApp: App {
     @StateObject private var app = AppController()
     @StateObject private var updater = UpdaterViewModel()
 
+    init() {
+        // Backstop: the bridge's socket writes already pass MSG_NOSIGNAL, but nothing that
+        // writes to a peer that has gone should be able to kill the app.
+        signal(SIGPIPE, SIG_IGN)
+    }
+
     var body: some Scene {
         MenuBarExtra {
             MenuBarView(vm: app.menu, bridge: app.bridge)

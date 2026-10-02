@@ -91,13 +91,6 @@ public final class UnixSocketServer {
                     return
                 }
             }
-            // Fails with EINVAL when the peer already closed; harmless as long as the process
-            // ignores SIGPIPE (the app does, at launch): the write then just gets EPIPE.
-            var on: Int32 = 1
-            if setsockopt(client, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size)) != 0 {
-                let code = errno
-                log.debug("SO_NOSIGPIPE \(self.path, privacy: .public): \(code) \(String(cString: strerror(code)), privacy: .public)")
-            }
             _ = fcntl(client, F_SETFD, FD_CLOEXEC)
             onAccept(UnixSocketConnection(fd: client, log: log))
         }
@@ -160,8 +153,11 @@ public final class UnixSocketConnection {
         guard source != nil else { return }
         var offset = 0
         while offset < data.count {
+            // MSG_NOSIGNAL: a peer that has gone gets EPIPE, not a SIGPIPE that kills the
+            // process. (SO_NOSIGPIPE can't be set on a connection whose peer closed before
+            // it was accepted, as Safari's one-shot client does.)
             let written = data.withUnsafeBytes { raw in
-                Foundation.write(fd, raw.baseAddress! + offset, raw.count - offset)
+                Darwin.send(fd, raw.baseAddress! + offset, raw.count - offset, MSG_NOSIGNAL)
             }
             if written > 0 {
                 offset += written

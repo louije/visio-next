@@ -67,8 +67,7 @@ private let frame = BridgeFrame.encode(Data(#"{"type":"bye","tabId":1}"#.utf8))
 }
 
 @Test @MainActor func writingToAPeerThatClosedDropsTheConnection() async throws {
-    // As the app does at launch: SO_NOSIGPIPE can't be set on a peer that's already gone.
-    signal(SIGPIPE, SIG_IGN)
+    // SIGPIPE deliberately not ignored here: a regression to plain write() kills the run.
     let path = socketPath()
     let recorder = Recorder()
     let server = serve(path, recorder)
