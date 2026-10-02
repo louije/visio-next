@@ -9,11 +9,14 @@
   label + label { margin-top: 6px; }
   input { width: 16px; height: 16px; accent-color: #000091; }
   p { margin: 10px 0 0; color: #666; font-size: 11px; }
+  .unavailable { color: #b3261e; font-size: 11px; }
 </style>
 <section id="sites">
   <h1>Global mute also on</h1>
-  <label><input type="checkbox" data-site="meet"> Google Meet</label>
-  <label><input type="checkbox" data-site="teams"> Teams</label>
+  <label><input type="checkbox" data-site="meet"> Google Meet
+    <span class="unavailable" hidden>Not available in this browser</span></label>
+  <label><input type="checkbox" data-site="teams"> Teams
+    <span class="unavailable" hidden>Not available in this browser</span></label>
   <p>With the VisioNext app, its shortcut mutes every call: Visio always, and these
     sites once allowed. Each site asks for access once.</p>
 </section>
