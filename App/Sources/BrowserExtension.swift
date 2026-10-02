@@ -24,6 +24,15 @@ enum BrowserExtension {
         LinkOpener.open(chromeWebStoreURL, bundleID: installed)
     }
 
+    static let firefoxAddonURL = URL(string: "https://addons.mozilla.org/firefox/addon/visio-next/")!
+
+    /// Opens the add-on page in Firefox if installed, otherwise in the default browser.
+    static func openFirefoxAddons() {
+        let installed = ["org.mozilla.firefox", "org.mozilla.firefoxdeveloperedition", "org.mozilla.nightly"]
+            .first { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) != nil }
+        LinkOpener.open(firefoxAddonURL, bundleID: installed)
+    }
+
     /// Whether the bundled Safari extension is turned on; nil if Safari can't tell.
     static func isSafariExtensionEnabled() async -> Bool? {
         try? await SFSafariExtensionManager.stateOfSafariExtension(withIdentifier: safariExtensionID).isEnabled

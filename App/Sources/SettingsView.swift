@@ -188,6 +188,10 @@ private struct ExtensionSettings: View {
             Section("Chrome, Edge, Brave, Arc…") {
                 Button("Installer depuis le Chrome Web Store") { BrowserExtension.openChromeWebStore() }
             }
+
+            Section("Firefox") {
+                Button("Installer depuis addons.mozilla.org") { BrowserExtension.openFirefoxAddons() }
+            }
         }
         .formStyle(.grouped)
         .task { await refresh() }
