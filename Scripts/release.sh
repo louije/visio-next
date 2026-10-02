@@ -93,6 +93,19 @@ xcodebuild -exportArchive \
 APP="$EXPORT_DIR/VisioNext.app"
 [ -d "$APP" ] || { echo "error: exported app not found at $APP" >&2; exit 1; }
 
+# The Safari extension reaches the app's socket only through the App Group, which a
+# Developer ID build gets only from its provisioning profiles: without them it ships
+# signed but silently cut off from the app.
+APPEX="$APP/Contents/PlugIns/VisioSafariExtension.appex"
+APPEX_ENTITLEMENTS="$(codesign -d --entitlements - "$APPEX" 2>/dev/null)" \
+  || { echo "error: can't read the Safari extension's entitlements ($APPEX)" >&2; exit 1; }
+[[ "$APPEX_ENTITLEMENTS" == *group.com.meidosem.visionext* ]] \
+  || { echo "error: Safari extension not signed with the group.com.meidosem.visionext App Group" >&2; exit 1; }
+for BUNDLE in "$APP" "$APPEX"; do
+  [ -f "$BUNDLE/Contents/embedded.provisionprofile" ] \
+    || { echo "error: no embedded.provisionprofile in $BUNDLE" >&2; exit 1; }
+done
+
 # --- Notarize + staple -----------------------------------------------------
 echo "Notarizing (this can take a few minutes)…"
 NOTARY_ZIP="$BUILD_DIR/notarize.zip"
