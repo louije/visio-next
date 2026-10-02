@@ -144,6 +144,8 @@ test('teams: falls back to the English label, else unreadable', () => {
   assert.equal(teams.read(doc([teamsMic({ 'aria-label': 'Unmute mic' }), hangup()])).muted, true);
   assert.equal(teams.read(doc([teamsMic({ 'aria-label': 'Mute mic' }), hangup()])).muted, false);
   assert.equal(teams.read(doc([teamsMic({ 'aria-label': 'Couper le micro' }), hangup()])).muted, null);
+  assert.equal(teams.read(doc([teamsMic({ 'aria-label': 'Muted' }), hangup()])).muted, null);
+  assert.equal(teams.read(doc([teamsMic({ 'aria-label': 'Unmuted' }), hangup()])).muted, null);
 });
 
 test('teams: finds the mic by its other known hooks', () => {
@@ -187,4 +189,13 @@ test('teams: prefers the visible mic over a hidden one', () => {
   assert.equal(teams.toggle(doc([hidden, shown, hangup()])), true);
   assert.equal(shown.clicks, 1);
   assert.equal(hidden.clicks, 0);
+});
+
+test('teams: a hidden hangup or join button does not hide a visible one', () => {
+  const shownHangup = el('button', { 'data-inp': 'hangup-button' });
+  assert.equal(teams.read(doc([teamsMic(LIVE), hangup({ hidden: true }), shownHangup])).muted, false);
+  const hiddenJoin = el('button', { 'data-tid': 'prejoin-join-button' }, [], { hidden: true });
+  const shownJoin = el('button', { id: 'prejoin-join-button' });
+  assert.equal(teams.read(doc([teamsMic(LIVE), hangup(), hiddenJoin])).muted, false);
+  assert.equal(teams.read(doc([teamsMic(LIVE), hangup(), hiddenJoin, shownJoin])), null);
 });

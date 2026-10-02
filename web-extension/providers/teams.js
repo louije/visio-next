@@ -15,15 +15,10 @@
   var HANGUP = ['#hangup-button', '[data-inp="hangup-button"]', '[data-tid="hangup-main-btn"]'];
   var PREJOIN = ['[data-tid="prejoin-join-button"]', '#prejoin-join-button'];
 
-  function first(doc, selectors) {
-    for (var k = 0; k < selectors.length; k++) {
-      var el = doc.querySelector(selectors[k]);
-      if (el) return el;
-    }
-    return null;
-  }
-
-  /** The first visible match across the selectors, else the first match. */
+  /**
+   * The first visible match across the selectors, else the first match. Teams keeps
+   * hidden copies of its controls around: the first match may not be the one shown.
+   */
   function firstVisible(doc, selectors) {
     var fallback = null;
     for (var k = 0; k < selectors.length; k++) {
@@ -54,8 +49,9 @@
     if (a !== null) return a;
     if (b !== null) return b;
     var label = mic.getAttribute('aria-label') || '';
-    if (/^unmute/i.test(label)) return true;
-    if (/^mute/i.test(label)) return false;
+    // Whole words: a status label like "Muted" / "Unmuted" is not the button's action.
+    if (/^unmute\b/i.test(label)) return true;
+    if (/^mute\b/i.test(label)) return false;
     return null;
   }
 
@@ -71,7 +67,7 @@
     read: function (doc) {
       var mic = firstVisible(doc, MIC);
       // The pre-join screen has a mic too: a call has a visible hangup button and no join button.
-      if (!mic || !isVisible(first(doc, HANGUP)) || isVisible(first(doc, PREJOIN))) return null;
+      if (!mic || !isVisible(firstVisible(doc, HANGUP)) || isVisible(firstVisible(doc, PREJOIN))) return null;
       return { muted: mutedFrom(mic), canUnmute: !isDisabled(mic) };
     },
 
