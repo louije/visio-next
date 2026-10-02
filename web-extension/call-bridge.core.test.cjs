@@ -27,7 +27,7 @@ function setup(opts, shared) {
   const clear = (i) => { const k = timers.findIndex((t) => t.id === i); if (k >= 0) timers.splice(k, 1); };
   const ctx = {
     document: { documentElement: {} },
-    location: { host: 'x.test' },
+    location: { host: 'x.test', href: 'https://x.test/room' },
     window: { addEventListener() {} },
     console: { warn() {} },
     MutationObserver: function (cb) { moCb = cb; this.observe = () => {}; this.disconnect = () => {}; },
@@ -60,6 +60,7 @@ function setup(opts, shared) {
       now = end;
     },
     mutate() { if (moCb) moCb([]); },
+    message(msg) { listeners.forEach((l) => l(msg)); },
     press(value) { listeners.forEach((l) => l({ type: 'setMuted', value })); },
     states() { return sent.filter((m) => m.type === 'state'); },
   };
@@ -170,4 +171,24 @@ test('core: a press that never took is forgotten once the call ends', () => {
   h.page.state = { muted: false, canUnmute: true }; h.mutate(); h.advance(300); // a new one
   h.press(true);
   assert.equal(h.page.clicks, 2);
+});
+
+test('core: a stop for this site says bye, then nothing more', () => {
+  const h = setup();
+  h.advance(300);
+  h.message({ type: 'stop', origins: ['https://x.test/*'] });
+  assert.deepEqual(h.sent.map((m) => m.type), ['state', 'bye']);
+  assert.equal(h.ctx.__vnCallBridge, undefined);
+  h.page.state = { muted: true, canUnmute: true }; h.mutate(); h.advance(60000);
+  h.press(false);
+  assert.equal(h.sent.length, 2);
+  assert.equal(h.page.clicks, 0);
+});
+
+test('core: a stop for other sites is ignored', () => {
+  const h = setup();
+  h.advance(300);
+  h.message({ type: 'stop', origins: ['https://y.test/*', 'https://x.test.evil/*'] });
+  h.page.state = { muted: true, canUnmute: true }; h.mutate(); h.advance(300);
+  assert.deepEqual(h.states().map((m) => m.muted), [false, true]);
 });

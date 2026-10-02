@@ -163,10 +163,27 @@ api.tabs.onRemoved.addListener((tabId) => {
   if (sessions.has(tabId)) report(tabId, { type: 'bye' });
 });
 
+/**
+ * Stop the call bridges already running on origins the user just revoked: unregistering
+ * only spares new pages. Every tab gets it (each bridge checks its own URL): once access
+ * is gone, a `url` query no longer sees those tabs.
+ */
+async function stopOn(origins) {
+  if (!origins || !origins.length) return;
+  try {
+    for (const tab of await api.tabs.query({})) {
+      Promise.resolve(api.tabs.sendMessage(tab.id, { type: 'stop', origins })).catch(() => {});
+    }
+  } catch (e) { /* query failed */ }
+}
+
 // Guarded: a missing event in one browser (Safari…) mustn't take the whole background down.
 api.runtime.onStartup?.addListener(syncSites);
 api.permissions?.onAdded?.addListener(syncSites);
-api.permissions?.onRemoved?.addListener(syncSites);
+api.permissions?.onRemoved?.addListener((removed) => {
+  syncSites();
+  stopOn(removed && removed.origins);
+});
 
 /** Drop our registrations so the next sync registers this version's js/matches. */
 async function dropRegistrations() {

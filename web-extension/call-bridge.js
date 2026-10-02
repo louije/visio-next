@@ -171,8 +171,23 @@
     }, 2000);
   }
 
+  /** Whether this page is under one of these match patterns (`https://host/*`); none = all. */
+  function coveredBy(patterns) {
+    if (!patterns) return true;
+    for (var k = 0; k < patterns.length; k++) {
+      if (location.href.indexOf(String(patterns[k]).replace(/\*$/, '')) === 0) return true;
+    }
+    return false;
+  }
+
   api.runtime.onMessage.addListener(function (msg) {
-    if (!msg || msg.type !== 'setMuted' || dead || toggleOff) return;
+    if (!msg || dead) return;
+    // Access to this site revoked: say bye (the app drops the call) and stop for good.
+    if (msg.type === 'stop') {
+      if (coveredBy(msg.origins)) { leaveCall(); teardown(); }
+      return;
+    }
+    if (msg.type !== 'setMuted' || toggleOff) return;
     var want = !!msg.value;
     if (planMute(provider.read(document), want, pending) !== 'press') return;
     if (!provider.toggle(document)) return;
