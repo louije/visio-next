@@ -79,6 +79,11 @@ test("sites: each origin's host is claimed by its own provider only", () => {
     for (const origin of site.origins) {
       const claimed = providers.filter((p) => p.matches(hostOf(origin))).map((p) => p.id);
       assert.deepEqual(claimed, [site.id], origin);
+      // Nor lookalikes: a parent domain, a subdomain, a suffix.
+      const host = hostOf(origin);
+      for (const other of [host.split('.').slice(1).join('.'), 'x.' + host, host + '.evil.test']) {
+        assert.deepEqual(providers.filter((p) => p.matches(other)).map((p) => p.id), [], other);
+      }
     }
   });
 });

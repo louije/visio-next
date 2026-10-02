@@ -75,3 +75,10 @@ test('options: a refused grant puts the switch back', async () => {
   assert.equal(h.boxes[0].checked, false);
   assert.equal(h.boxes[0].note.hidden, true);
 });
+
+test('options: a site already allowed but not registered says so on load', async () => {
+  const h = setup({ contains: async () => true, registered: [{ id: 'vn-meet' }] });
+  await flush();
+  await h.runTimers();
+  assert.deepEqual(h.boxes.map((b) => b.note.hidden), [true, false]);
+});

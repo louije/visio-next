@@ -232,3 +232,26 @@ test('core: a press with nothing to press is not left pending', () => {
   assert.equal(h.page.tries, 2);
   assert.equal(h.page.clicks, 1);
 });
+
+test('core: rejoining reports the call again, with one heartbeat', () => {
+  const h = setup();
+  h.advance(300);
+  h.page.state = null; h.mutate(); h.advance(3000);
+  h.page.state = { muted: false, canUnmute: true }; h.mutate(); h.advance(300); // same state as before
+  h.advance(30000);
+  const after = h.sent.slice(h.sent.findIndex((m) => m.type === 'bye') + 1);
+  assert.deepEqual(after.map((m) => m.type), ['state', 'state']); // the report, one beat
+});
+
+test('core: a slow press that took is not blamed for a later manual change', () => {
+  const h = setup();
+  h.advance(300);
+  h.page.reflect = false;
+  h.press(true);
+  h.advance(1100); // verify ran, state still wrong
+  h.page.state = { muted: true, canUnmute: true }; h.mutate(); h.advance(300); // took at ~1.2 s
+  h.page.state = { muted: false, canUnmute: true }; h.mutate(); h.advance(3000); // the user unmutes
+  h.page.reflect = true;
+  h.press(true);
+  assert.equal(h.page.clicks, 2);
+});
