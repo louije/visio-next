@@ -53,7 +53,11 @@ final class CallBridge: ObservableObject {
     private static let safariBundleID = "com.apple.Safari"
 
     init() {
+        // Not from Xcode runs or previews: they'd point every browser's host at DerivedData,
+        // hijacking the installed app. Scripts/install.sh builds Release, so it still installs.
+        #if !DEBUG
         NativeHostInstaller.install()
+        #endif
         if let path = Self.safariSocketPath { listen(at: path, safari: true) }
         listen(at: Self.pipeSocketPath, safari: false)
         expiryTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
