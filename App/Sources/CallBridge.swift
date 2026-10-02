@@ -48,6 +48,9 @@ final class CallBridge: ObservableObject {
     private var nextPipe = 0
     private var expiryTimer: Timer?
     private var mic: MicStatusItem?
+    private var safariTerminationObserver: NSObjectProtocol?
+
+    private static let safariBundleID = "com.apple.Safari"
 
     init() {
         NativeHostInstaller.install()
@@ -55,6 +58,17 @@ final class CallBridge: ObservableObject {
         listen(at: Self.pipeSocketPath, safari: false)
         expiryTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.sessions.expire(now: Date()) }
+        }
+        // Safari's connections are one-shot, so nothing else tells us its calls ended when
+        // it quits: drop them, or they'd linger as ghost calls until expiry.
+        safariTerminationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] note in
+            let bundleID = (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.bundleIdentifier
+            MainActor.assumeIsolated {
+                guard bundleID == Self.safariBundleID else { return }
+                self?.sessions.drop(channel: .safari)
+            }
         }
         KeyboardShortcuts.onKeyUp(for: .toggleMute) { [weak self] in
             MainActor.assumeIsolated { self?.toggleMute() }
@@ -90,10 +104,9 @@ final class CallBridge: ObservableObject {
         for (id, connection) in pipes where command.channel == nil || command.channel == .pipe(id) {
             connection.write(frame)
         }
-        var toSafari = command.channel.map { $0 == .safari } ?? sessions.channels.contains(.safari)
-        if command.channel == nil {
-            toSafari = toSafari && !NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Safari").isEmpty
-        }
+        // Only while Safari runs: dispatchMessage would otherwise launch it.
+        let toSafari = (command.channel.map { $0 == .safari } ?? sessions.channels.contains(.safari))
+            && !NSRunningApplication.runningApplications(withBundleIdentifier: Self.safariBundleID).isEmpty
         if toSafari {
             SFSafariApplication.dispatchMessage(withName: "setMuted",
                                                 toExtensionWithIdentifier: BrowserExtension.safariExtensionID,
