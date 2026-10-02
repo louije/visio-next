@@ -93,15 +93,20 @@ xcodebuild -exportArchive \
 APP="$EXPORT_DIR/VisioNext.app"
 [ -d "$APP" ] || { echo "error: exported app not found at $APP" >&2; exit 1; }
 
-# The Safari extension reaches the app's socket only through the App Group, which a
-# Developer ID build gets only from its provisioning profiles: without them it ships
-# signed but silently cut off from the app.
-APPEX="$APP/Contents/PlugIns/VisioSafariExtension.appex"
-APPEX_ENTITLEMENTS="$(codesign -d --entitlements - "$APPEX" 2>/dev/null)" \
-  || { echo "error: can't read the Safari extension's entitlements ($APPEX)" >&2; exit 1; }
-[[ "$APPEX_ENTITLEMENTS" == *group.com.meidosem.visionext* ]] \
-  || { echo "error: Safari extension not signed with the group.com.meidosem.visionext App Group" >&2; exit 1; }
-for BUNDLE in "$APP" "$APPEX"; do
+# The app, the widget and the Safari extension share data and the bridge socket only
+# through the App Group, which a Developer ID build gets only from its provisioning
+# profiles: without them a bundle ships signed but silently cut off from the others.
+APP_GROUP="group.com.meidosem.visionext"
+BUNDLES=("$APP")
+for APPEX in "$APP"/Contents/PlugIns/*.appex; do
+  if [ -d "$APPEX" ]; then BUNDLES+=("$APPEX"); fi   # the glob stays literal when nothing matches
+done
+[ "${#BUNDLES[@]}" -gt 1 ] || { echo "error: no app extensions in $APP/Contents/PlugIns" >&2; exit 1; }
+for BUNDLE in "${BUNDLES[@]}"; do
+  ENTITLEMENTS="$(codesign -d --entitlements - "$BUNDLE" 2>/dev/null)" \
+    || { echo "error: can't read the entitlements of $BUNDLE" >&2; exit 1; }
+  [[ "$ENTITLEMENTS" == *"$APP_GROUP"* ]] \
+    || { echo "error: $BUNDLE not signed with the $APP_GROUP App Group" >&2; exit 1; }
   [ -f "$BUNDLE/Contents/embedded.provisionprofile" ] \
     || { echo "error: no embedded.provisionprofile in $BUNDLE" >&2; exit 1; }
 done
