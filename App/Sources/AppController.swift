@@ -45,10 +45,10 @@ final class AppController: ObservableObject {
     private func showMic() {
         mic = MicStatusItem { [weak self] in self?.bridge.toggleMute() }
         micUpdates = bridge.$sessions
-            .combineLatest(menu.$imminentColor)
-            .sink { [weak self] sessions, color in
-                self?.mic?.update(state: MutePolicy.state(for: sessions), indicator: sessions.indicator, color: color)
-            }
+            .map { MutePolicy.state(for: $0) }
+            .removeDuplicates()   // not on every heartbeat
+            .combineLatest(menu.$imminentColor.removeDuplicates())
+            .sink { [weak self] state, color in self?.mic?.update(state: state, color: color) }
     }
 }
 

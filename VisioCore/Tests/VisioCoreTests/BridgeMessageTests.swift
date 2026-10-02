@@ -22,12 +22,18 @@ import Foundation
     #expect(BridgeMessage(json: Data("not json".utf8)) == nil)
 }
 
-@Test func muteCommandWireForms() {
-    let key = CallSessions.Key(channel: .pipe(2), tabId: 5)
-    #expect(String(decoding: MuteCommand.muteAll.json, as: UTF8.self) == #"{"type":"setMuted","value":true}"#)
-    #expect(String(decoding: MuteCommand.unmute(key).json, as: UTF8.self) == #"{"type":"setMuted","value":false,"tabId":5}"#)
-    let all = MuteCommand.muteAll.userInfo
+@Test func muteCommandJSONIsTheUserInfo() throws {
+    for command in [MuteCommand.muteAll, .unmute(CallSessions.Key(channel: .pipe(2), tabId: 5))] {
+        let parsed = try #require(try JSONSerialization.jsonObject(with: command.json) as? NSDictionary)
+        #expect(parsed == command.userInfo as NSDictionary)
+    }
+}
+
+@Test func muteCommandCarriesWhatTheBackgroundReads() throws {
+    // background.js: `msg.type === 'setMuted'`, `msg.value`, and `msg.tabId` only for an unmute.
+    let all = try #require(try JSONSerialization.jsonObject(with: MuteCommand.muteAll.json) as? [String: Any])
     #expect(all["type"] as? String == "setMuted" && all["value"] as? Bool == true && all["tabId"] == nil)
-    let one = MuteCommand.unmute(key).userInfo
+    let one = try #require(try JSONSerialization.jsonObject(
+        with: MuteCommand.unmute(CallSessions.Key(channel: .pipe(2), tabId: 5)).json) as? [String: Any])
     #expect(one["type"] as? String == "setMuted" && one["value"] as? Bool == false && one["tabId"] as? Int == 5)
 }

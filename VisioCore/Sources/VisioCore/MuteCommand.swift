@@ -31,19 +31,17 @@ public enum MuteCommand: Equatable, Sendable {
         }
     }
 
-    /// Wire form for the socket transports.
-    public var json: Data {
-        switch self {
-        case .muteAll: Data(#"{"type":"setMuted","value":true}"#.utf8)
-        case .unmute(let key): Data(#"{"type":"setMuted","value":false,"tabId":\#(key.tabId)}"#.utf8)
-        }
-    }
-
-    /// Same payload for SFSafariApplication.dispatchMessage's userInfo.
+    /// The payload, as SFSafariApplication.dispatchMessage takes it.
     public var userInfo: [String: Any] {
         switch self {
         case .muteAll: ["type": "setMuted", "value": true]
         case .unmute(let key): ["type": "setMuted", "value": false, "tabId": key.tabId]
         }
+    }
+
+    /// The same payload for the socket transports.
+    public var json: Data {
+        // A string, a bool and an int: always valid JSON.
+        try! JSONSerialization.data(withJSONObject: userInfo, options: .sortedKeys)
     }
 }

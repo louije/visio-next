@@ -21,62 +21,16 @@ final class MicStatusItem: NSObject {
         item.button?.action = #selector(clicked)
     }
 
-    /// Live: mic in the "hot" color; muted: default slashed mic; no call: hidden.
-    func update(state: MuteState?, indicator: CallIndicator, color: IconColor) {
-        item.isVisible = indicator != .none
-        guard indicator != .none, let button = item.button else { return }
-        button.image = MicIcon.image(live: indicator == .live, color: color)
-        button.toolTip = state?.title
+    /// Live (a call to mute): mic in the "hot" color; all muted: default slashed mic;
+    /// no call: hidden.
+    func update(state: MuteState?, color: IconColor) {
+        item.isVisible = state != nil
+        guard let state, let button = item.button else { return }
+        button.image = MicIcon.image(live: state.isMute, color: color)
+        button.toolTip = state.title
     }
 
     @objc private func clicked() {
         onClick()
-    }
-}
-
-enum MicIcon {
-    /// Same height as the VisioNext glyph (MenuBarIcon), so both items share a baseline.
-    private static let height: CGFloat = 18
-    /// The mic's stand makes it look high when centred; nudge it down to line up with the glyph.
-    private static let drop: CGFloat = 0.5
-
-    static func image(live: Bool, color: IconColor) -> NSImage? {
-        let config = NSImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
-        guard let symbol = NSImage(systemSymbolName: live ? "mic.fill" : "mic.slash.fill",
-                                   accessibilityDescription: live ? "Micro actif" : "Micro coupé")?
-            .withSymbolConfiguration(config) else { return nil }
-        let s = symbol.size
-        let size = NSSize(width: s.width, height: height)
-        let draw = { symbol.draw(in: NSRect(x: 0, y: (height - s.height) / 2 - drop, width: s.width, height: s.height)) }
-        // Live: tinted exactly like the imminent glyph (same color resolution); muted: template.
-        let image: NSImage
-        if live {
-            image = MenuBarIcon.tinted(size: size, color: color, content: draw)
-        } else {
-            image = NSImage(size: size, flipped: false) { _ in draw(); return true }
-            image.isTemplate = true
-        }
-        image.accessibilityDescription = symbol.accessibilityDescription
-        return image
-    }
-}
-
-extension MuteState {
-    /// What the menu item (and the mic's tooltip) says.
-    var title: String {
-        switch self {
-        case .mute(1): "Couper le micro"
-        case .mute(let calls): "Couper le micro (\(calls) visios)"
-        case .unmute: "Réactiver le micro"
-        case .unmuteNotAllowed: "Micro non autorisé dans cette visio"
-        case .cannotUnmuteSeveral: "Impossible de réactiver plusieurs visios"
-        }
-    }
-
-    var isActionable: Bool {
-        switch self {
-        case .mute, .unmute: true
-        case .unmuteNotAllowed, .cannotUnmuteSeveral: false
-        }
     }
 }

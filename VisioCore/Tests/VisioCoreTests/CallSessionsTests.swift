@@ -4,20 +4,14 @@ import Foundation
 
 private let t0 = Date(timeIntervalSince1970: 1_000_000)
 
-@Test func startsEmpty() {
-    let s = CallSessions()
-    #expect(!s.isInCall)
-    #expect(s.indicator == .none)
-}
-
 @Test func stateAddsAndUpdatesASession() {
     var s = CallSessions()
+    let key = CallSessions.Key(channel: .safari, tabId: 1)
     s.apply(.state(tabId: 1, muted: false, canUnmute: true), from: .safari, at: t0)
-    #expect(s.isInCall)
-    #expect(s.indicator == .live)
+    #expect(s.sessions[key]?.muted == false)
     s.apply(.state(tabId: 1, muted: true, canUnmute: true), from: .safari, at: t0)
     #expect(s.sessions.count == 1)
-    #expect(s.indicator == .muted)
+    #expect(s.sessions[key]?.muted == true)
 }
 
 @Test func sameTabIdOnDifferentChannelsAreDistinct() {
@@ -25,14 +19,13 @@ private let t0 = Date(timeIntervalSince1970: 1_000_000)
     s.apply(.state(tabId: 1, muted: true, canUnmute: true), from: .safari, at: t0)
     s.apply(.state(tabId: 1, muted: false, canUnmute: true), from: .pipe(1), at: t0)
     #expect(s.sessions.count == 2)
-    #expect(s.indicator == .live)
 }
 
 @Test func byeRemovesTheSession() {
     var s = CallSessions()
     s.apply(.state(tabId: 1, muted: false, canUnmute: true), from: .safari, at: t0)
     s.apply(.bye(tabId: 1), from: .safari, at: t0)
-    #expect(!s.isInCall)
+    #expect(s.sessions.isEmpty)
 }
 
 @Test func dropChannelRemovesOnlyItsSessions() {

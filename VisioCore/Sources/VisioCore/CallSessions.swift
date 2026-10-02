@@ -14,11 +14,6 @@ public struct CallSession: Equatable, Sendable {
     public var lastSeen: Date
 }
 
-/// What the menu bar shows.
-public enum CallIndicator: Equatable, Sendable {
-    case none, live, muted
-}
-
 /// The Visio calls the extensions have reported, keyed by channel + tab.
 public struct CallSessions: Equatable, Sendable {
     public struct Key: Hashable, Sendable {
@@ -52,12 +47,5 @@ public struct CallSessions: Equatable, Sendable {
         if kept.count != sessions.count { sessions = kept }
     }
 
-    public var isInCall: Bool { !sessions.isEmpty }
-
     public var channels: Set<Channel> { Set(sessions.keys.map(\.channel)) }
-
-    public var indicator: CallIndicator {
-        if sessions.isEmpty { return .none }
-        return sessions.values.allSatisfy(\.muted) ? .muted : .live
-    }
 }

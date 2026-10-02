@@ -119,13 +119,6 @@ struct MuteRow: View {
     }
 }
 
-private extension MuteState {
-    var isMute: Bool {
-        if case .mute = self { return true }
-        return false
-    }
-}
-
 struct MeetingRow: View {
     let meeting: Meeting
     let onJoin: (Meeting) -> Void
