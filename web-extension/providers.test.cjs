@@ -1,4 +1,5 @@
-// Unit tests for the site adapters (providers/*.js). Run: node --test
+// Unit tests for the site adapters (providers/*.js); which hosts each claims is in
+// sites.test.cjs. Run: node --test
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { el, doc, fakeWindow } = require('./fake-dom.cjs');
@@ -8,11 +9,6 @@ const visio = require('./providers/visio.js');
 
 const mediaState = (mic, canPublish) =>
   el('div', { id: 'media-state', 'data-microphone-enabled': mic, 'data-can-publish-microphone': canPublish });
-
-test('visio: matches its host only', () => {
-  assert.equal(visio.matches('visio.numerique.gouv.fr'), true);
-  assert.equal(visio.matches('meet.google.com'), false);
-});
 
 test('visio: not in a call without #media-state', () => {
   assert.equal(visio.read(doc([])), null);
@@ -36,10 +32,6 @@ test('visio: toggle presses Ctrl+D on the window', () => {
   assert.equal(win.dispatched[0].ctrlKey, true);
 });
 
-test('visio: keeps a failed press from disabling toggles', () => {
-  assert.equal(visio.guardToggle, false);
-});
-
 // ---- Meet -------------------------------------------------------------------
 
 const meet = require('./providers/meet.js');
@@ -47,11 +39,6 @@ const meet = require('./providers/meet.js');
 const meetButton = (muted, iconName, opts) =>
   el('button', { 'data-is-muted': muted }, [el('i', { class: 'google-symbols notranslate' }, [], { text: iconName })], opts);
 const panels = () => el('div', { 'data-panel-id': '1' });
-
-test('meet: matches its host only', () => {
-  assert.equal(meet.matches('meet.google.com'), true);
-  assert.equal(meet.matches('visio.numerique.gouv.fr'), false);
-});
 
 test('meet: reads the mic in a call', () => {
   const live = doc([meetButton('false', 'mic'), meetButton('true', 'videocam_off'), panels()]);
@@ -98,10 +85,6 @@ test('meet: toggle reports failure without a mic', () => {
   assert.equal(meet.toggle(doc([panels()])), false);
 });
 
-test('meet: guards against clicking the wrong control', () => {
-  assert.equal(meet.guardToggle, true);
-});
-
 // ---- Teams ------------------------------------------------------------------
 
 const teams = require('./providers/teams.js');
@@ -110,13 +93,6 @@ const LIVE = { 'data-track-action-scenario': 'callMuteAudio', 'data-state': 'mic
 const MUTED = { 'data-track-action-scenario': 'callUnmuteAudio', 'data-state': 'mic-off', 'aria-label': 'Unmute mic' };
 const teamsMic = (attrs, opts) => el('button', Object.assign({ id: 'microphone-button', 'data-inp': 'microphone-button' }, attrs), [], opts);
 const hangup = (opts) => el('button', { id: 'hangup-button', 'data-tid': 'hangup-main-btn' }, [], opts);
-
-test('teams: matches its hosts', () => {
-  assert.equal(teams.matches('teams.microsoft.com'), true);
-  assert.equal(teams.matches('teams.cloud.microsoft'), true);
-  assert.equal(teams.matches('teams.live.com'), true);
-  assert.equal(teams.matches('meet.google.com'), false);
-});
 
 test('teams: reads the mic in a call', () => {
   assert.deepEqual(teams.read(doc([teamsMic(LIVE), hangup()])), { muted: false, canUnmute: true });
@@ -165,10 +141,6 @@ test('teams: toggle clicks the mic', () => {
   assert.equal(teams.toggle(doc([mic, hangup()])), true);
   assert.equal(mic.clicks, 1);
   assert.equal(teams.toggle(doc([hangup()])), false);
-});
-
-test('teams: guards against clicking the wrong control', () => {
-  assert.equal(teams.guardToggle, true);
 });
 
 test('meet: never falls back to the camera', () => {
