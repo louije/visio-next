@@ -15,12 +15,14 @@ fileGroups:
 packages:
   VisioCore:
     path: ../VisioCore
+  # Exact versions: release builds must be reproducible (Package.resolved is not
+  # committed). Bump deliberately, after reading the changelog.
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
-    from: "2.6.0"
+    exactVersion: "2.9.3"
   KeyboardShortcuts:
     url: https://github.com/sindresorhus/KeyboardShortcuts
-    from: "3.1.0"
+    exactVersion: "3.1.0"
 # Single source of truth for the version — inherited by every target (app,
 # widget, Safari extension) so they can never drift. Scripts/release.sh bumps
 # these two lines. Keep them here, not per-target.
