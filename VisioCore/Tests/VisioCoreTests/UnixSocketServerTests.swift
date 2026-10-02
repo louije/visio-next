@@ -169,3 +169,20 @@ private let frame = BridgeFrame.encode(Data(#"{"type":"bye","tabId":1}"#.utf8))
     #expect(await eventually { recorder.messages.count == 1 })
     #expect(recorder.messages == [frame.dropFirst(4)])
 }
+
+@Test @MainActor func stopRefusesNewClients() async throws {
+    let path = socketPath()
+    let server = serve(path, Recorder())
+    #expect(server.start())
+    defer { unlink(path) }
+    close(try connectClient(to: path))
+
+    // The listening fd closes in the source's cancel handler, on a later main-queue turn.
+    server.stop()
+    let refused = await eventually {
+        guard let client = try? connectClient(to: path) else { return true }
+        close(client)
+        return false
+    }
+    #expect(refused)
+}

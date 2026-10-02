@@ -65,8 +65,10 @@ public final class UnixSocketServer {
         return true
     }
 
-    /// Stops accepting (and closes the listening fd). Open connections are left alone, and
-    /// the socket file stays: the next `start()` on the path reclaims it.
+    /// Stops accepting: the listening fd closes in the source's cancel handler, on a later
+    /// main-queue turn (closing it any earlier is unsafe while the source may read it).
+    /// Open connections are left alone, and the socket file stays: the next `start()` on
+    /// the path reclaims it.
     public func stop() {
         source?.cancel()
         source = nil
