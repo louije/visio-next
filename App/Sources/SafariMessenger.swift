@@ -33,6 +33,7 @@ final class SafariMessenger: SafariMessaging {
     }
 
     func observeQuit(_ onQuit: @escaping @MainActor () -> Void) {
+        if let quitObserver { NSWorkspace.shared.notificationCenter.removeObserver(quitObserver) }
         quitObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main
         ) { note in

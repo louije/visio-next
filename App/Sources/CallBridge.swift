@@ -31,7 +31,9 @@ final class CallBridge: ObservableObject {
                    safari: SafariMessenger())
     }
 
+    /// Once: a second call would listen again and stack timers.
     func start() {
+        guard expiryTimer == nil else { return }
         transport.onEvent = { [weak self] event in self?.handle(event) }
         transport.start()
         expiryTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
