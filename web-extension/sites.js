@@ -123,12 +123,15 @@
   }
 
   /**
-   * Stop the call bridges already running on origins the user just revoked: unregistering
-   * only spares new pages. Every tab gets it (each bridge checks its own URL): once access
-   * is gone, a `url` query no longer sees those tabs.
+   * Stop the call bridges already running on sites the user just revoked: unregistering
+   * only spares new pages. Revoking any of a site's origins stops the whole site. Every
+   * tab gets it (each bridge checks its own URL): once access is gone, a `url` query no
+   * longer sees those tabs.
    */
-  async function stopRevoked(origins) {
-    if (!origins || !origins.length) return;
+  async function stopRevoked(removedOrigins) {
+    const removed = removedOrigins || [];
+    const origins = OPTIONAL.filter((s) => s.origins.some((o) => removed.includes(o))).flatMap((s) => s.origins);
+    if (!origins.length) return;
     try {
       for (const tab of await api.tabs.query({})) {
         Promise.resolve(api.tabs.sendMessage(tab.id, { type: 'stop', origins })).catch(() => {});

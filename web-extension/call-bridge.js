@@ -171,11 +171,17 @@
     }, 2000);
   }
 
-  /** Whether this page is under one of these match patterns (`https://host/*`); none = all. */
+  /**
+   * Whether this page's scheme and host are exactly those of one of these match
+   * patterns (`https://host/*`, as in sites.js). No patterns: not covered.
+   */
   function coveredBy(patterns) {
-    if (!patterns) return true;
+    if (!patterns || !patterns.length) return false;
     for (var k = 0; k < patterns.length; k++) {
-      if (location.href.indexOf(String(patterns[k]).replace(/\*$/, '')) === 0) return true;
+      try {
+        var u = new URL(String(patterns[k]).replace(/\*$/, ''));
+        if (u.protocol === location.protocol && u.host === location.host) return true;
+      } catch (e) { /* not a literal origin pattern: never matches */ }
     }
     return false;
   }

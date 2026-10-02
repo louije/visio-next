@@ -90,6 +90,12 @@ test('sites: the options switches ask for the same origins as the background reg
   for (const site of OPTIONAL) assert.deepEqual(asked[site.id], site.origins, site.id);
 });
 
+test('sites: every origin is a literal https://<host>/* (call-bridge.js compares hosts exactly)', () => {
+  for (const origin of SITES.flatMap((s) => s.origins)) {
+    assert.match(origin, /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)+\/\*$/, origin);
+  }
+});
+
 test('sites: sites.js is loaded before what uses it, everywhere it ships', () => {
   assert.deepEqual(MANIFEST.background.scripts, ['sites.js', 'background.js']); // Firefox
   assert.match(read('background.js'), /importScripts\('sites\.js'\)/); // service workers

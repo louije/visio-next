@@ -30,7 +30,8 @@ function setup(opts, shared) {
   const clear = (i) => { const k = timers.findIndex((t) => t.id === i); if (k >= 0) timers.splice(k, 1); };
   const ctx = {
     document: { documentElement: {} },
-    location: { host: 'x.test', href: 'https://x.test/room' },
+    location: new URL(opts.href || 'https://x.test/room'),
+    URL,
     window: { addEventListener: (type, fn) => { windowListeners[type] = fn; } },
     console: { warn() {} },
     MutationObserver: function (cb) { moCb = cb; this.observe = () => {}; this.disconnect = () => {}; },
@@ -189,12 +190,23 @@ test('core: a stop for this site says bye, then nothing more', () => {
   assert.equal(h.page.clicks, 0);
 });
 
-test('core: a stop for other sites is ignored', () => {
+test('core: a stop for other sites, or naming none, is ignored', () => {
   const h = setup();
   h.advance(300);
-  h.message({ type: 'stop', origins: ['https://y.test/*', 'https://x.test.evil/*'] });
+  h.message({ type: 'stop', origins: ['https://y.test/*', 'https://x.test.evil/*', 'http://x.test/*', 'nonsense'] });
+  h.message({ type: 'stop' });
+  h.message({ type: 'stop', origins: [] });
   h.page.state = { muted: true, canUnmute: true }; h.mutate(); h.advance(300);
   assert.deepEqual(h.states().map((m) => m.muted), [false, true]);
+});
+
+test('core: a stop matches the exact host, not a prefix of it', () => {
+  const h = setup({ href: 'https://x.test.evil/room' });
+  h.advance(300);
+  h.message({ type: 'stop', origins: ['https://x.test/*'] });
+  assert.deepEqual(h.sent.map((m) => m.type), ['state']);
+  h.message({ type: 'stop', origins: ['https://x.test.evil/*'] });
+  assert.deepEqual(h.sent.map((m) => m.type), ['state', 'bye']);
 });
 
 test('core: leaving the page says bye', () => {

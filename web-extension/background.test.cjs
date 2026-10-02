@@ -228,3 +228,19 @@ test("background: a revoked site's tabs are told to stop", async () => {
   assert.deepEqual(stops.map(([id]) => id).sort(), [5, 7]);
   assert.ok(stops.every(([, msg]) => msg.origins.length === 1 && msg.origins[0] === MEET));
 });
+
+test('background: revoking one origin of a site stops the whole site', async () => {
+  const h = await setup({ tabs: { [TEAMS]: [6] }, granted: TEAMS_ALL });
+  h.allowed.delete(TEAMS_ALL[2]);
+  h.chrome.permissions.onRemoved.fire({ origins: [TEAMS_ALL[2]] });
+  await settle();
+  assert.deepEqual(h.sent, [[6, { type: 'stop', origins: TEAMS_ALL }]]);
+});
+
+test('background: a revoked origin of no opt-in site stops nothing', async () => {
+  const h = await setup({ tabs: { [VISIO]: [7] } });
+  h.chrome.permissions.onRemoved.fire({ origins: [VISIO] });
+  h.chrome.permissions.onRemoved.fire({});
+  await settle();
+  assert.deepEqual(h.sent, []);
+});
