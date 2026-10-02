@@ -92,15 +92,15 @@ final class CallBridge: ObservableObject {
 
     func send(_ command: MuteCommand) {
         log.debug("send \(String(decoding: command.json, as: UTF8.self), privacy: .public)")
-        // A mute goes everywhere; an unmute only down its one session's channel.
+        let targets = command.targets(
+            pipes: Set(pipes.keys),
+            safariHasSession: sessions.channels.contains(.safari),
+            safariRunning: !NSRunningApplication.runningApplications(withBundleIdentifier: Self.safariBundleID).isEmpty)
         let frame = BridgeFrame.encode(command.json)
-        for (id, connection) in pipes where command.channel == nil || command.channel == .pipe(id) {
-            connection.write(frame)
+        for id in targets.pipes {
+            pipes[id]?.write(frame)
         }
-        // Only while Safari runs: dispatchMessage would otherwise launch it.
-        let toSafari = (command.channel.map { $0 == .safari } ?? sessions.channels.contains(.safari))
-            && !NSRunningApplication.runningApplications(withBundleIdentifier: Self.safariBundleID).isEmpty
-        if toSafari {
+        if targets.safari {
             SFSafariApplication.dispatchMessage(withName: "setMuted",
                                                 toExtensionWithIdentifier: BrowserExtension.safariExtensionID,
                                                 userInfo: command.userInfo) { [log] error in
