@@ -102,3 +102,12 @@ test('sites: sites.js is loaded before what uses it, everywhere it ships', () =>
   assert.match(read('options.html'), /<script src="sites\.js"><\/script>\s*<script src="options\.js">/);
   assert.match(read('package.mjs'), /'sites\.js'/);
 });
+
+// Safety rule, not a restated constant: a provider that clicks a control must give up
+// when its press doesn't take (it may be clicking the wrong thing); Visio's keyboard
+// shortcut can't hit anything else, and Visio may refuse a press for good reasons.
+test('sites: click-based providers guard their presses, the keyboard one does not', () => {
+  assert.equal(require('./providers/meet.js').guardToggle, true);
+  assert.equal(require('./providers/teams.js').guardToggle, true);
+  assert.equal(require('./providers/visio.js').guardToggle, false);
+});
