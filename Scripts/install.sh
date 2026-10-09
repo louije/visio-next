@@ -45,14 +45,18 @@ APP_BUILT="$BUILD_DIR/Build/Products/Release/VisioNext.app"
 pkill -f "VisioNext.app/Contents/MacOS/VisioNext" 2>/dev/null || true
 mkdir -p "$HOME/Applications"
 rm -rf "$DEST"
-cp -R "$APP_BUILT" "$DEST"
-xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
 
-# Forget the build product so only the installed copy is known to LaunchServices:
+# Move (not copy) the build product so only the installed copy is known to LaunchServices:
 # Safari lists the extension of every VisioNext.app it knows, and the app's
 # SFSafariApplication.dispatchMessage only reaches the copy bundled with itself.
-/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
-  -u "$APP_BUILT" 2>/dev/null || true
+# Unregistering alone doesn't stick: a LaunchServices rebuild (e.g. after a macOS update)
+# re-registers every bundle Spotlight finds on disk. A moved bundle isn't picked up by
+# LaunchServices on its own (open fails with -600), so register the installed copy.
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+"$LSREGISTER" -u "$APP_BUILT" 2>/dev/null || true
+mv "$APP_BUILT" "$DEST"
+xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
+"$LSREGISTER" -f "$DEST"
 
 codesign --verify --strict "$DEST" && echo "Signature OK"
 echo "Installed: $DEST"
