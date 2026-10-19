@@ -7,11 +7,19 @@ struct MenuBarView: View {
     @ObservedObject var vm: MenuBarViewModel
     @ObservedObject var bridge: CallBridge
     @Environment(\.openSettings) private var openSettings
+    /// Whether the menu is open, and the mute row as it was when it opened. The row
+    /// neither appears nor goes away while the menu is open: a call that just ended
+    /// would otherwise pull the meetings up under the pointer.
+    @State private var isOpen = false
+    @State private var pinnedMute: MuteState?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if let state = bridge.muteState {
-                MuteRow(state: state) { bridge.toggleMute() }
+            if let pinned = isOpen ? pinnedMute : bridge.muteState {
+                // Live while the call lasts; once it's gone, its last state, disabled.
+                MuteRow(state: bridge.muteState ?? pinned, enabled: bridge.muteState != nil) {
+                    bridge.toggleMute()
+                }
                 Divider()
             }
             content
@@ -20,6 +28,10 @@ struct MenuBarView: View {
         }
         .frame(width: 320)
         .task { await vm.refresh() }
+        .background(MenuWindowObserver { open in
+            pinnedMute = bridge.muteState
+            isOpen = open
+        })
     }
 
     @ViewBuilder private var content: some View {
@@ -88,10 +100,12 @@ struct MenuBarView: View {
 /// Disabled when there's nothing it can do (several muted calls, unmute not allowed).
 struct MuteRow: View {
     let state: MuteState
+    var enabled = true
     let action: () -> Void
     @State private var hovering = false
 
-    private var highlighted: Bool { hovering && state.isActionable }
+    private var isActionable: Bool { enabled && state.isActionable }
+    private var highlighted: Bool { hovering && isActionable }
 
     var body: some View {
         Button(action: action) {
@@ -112,10 +126,49 @@ struct MuteRow: View {
             .background(RoundedRectangle(cornerRadius: 5).fill(highlighted ? Color.accentColor : .clear))
         }
         .buttonStyle(.plain)
-        .disabled(!state.isActionable)
-        .opacity(state.isActionable ? 1 : 0.5)
+        .disabled(!isActionable)
+        .opacity(isActionable ? 1 : 0.5)
         .onHover { hovering = $0 }
         .padding(6)
+    }
+}
+
+/// Tells when the menu's window opens and closes (becomes and resigns key): onAppear
+/// isn't a reliable signal for MenuBarExtra's window.
+private struct MenuWindowObserver: NSViewRepresentable {
+    let onChange: (_ open: Bool) -> Void
+
+    func makeNSView(context: Context) -> Tracker { Tracker(onChange: onChange) }
+    func updateNSView(_ nsView: Tracker, context: Context) { nsView.onChange = onChange }
+
+    final class Tracker: NSView {
+        var onChange: (_ open: Bool) -> Void
+        private var observers: [NSObjectProtocol] = []
+
+        init(onChange: @escaping (_ open: Bool) -> Void) {
+            self.onChange = onChange
+            super.init(frame: .zero)
+        }
+
+        required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            observers.forEach(NotificationCenter.default.removeObserver)
+            observers = []
+            guard let window else { return }
+            // Already key: it opened before we got here. Not mid-update: defer.
+            if window.isKeyWindow {
+                DispatchQueue.main.async { [weak self] in self?.onChange(true) }
+            }
+            for (name, open) in [(NSWindow.didBecomeKeyNotification, true),
+                                 (NSWindow.didResignKeyNotification, false)] {
+                observers.append(NotificationCenter.default.addObserver(forName: name, object: window,
+                                                                        queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.onChange(open) }
+                })
+            }
+        }
     }
 }
 
