@@ -5,18 +5,28 @@ An adaptive layout tweak for [Meet / La Suite numérique](https://visio.numeriqu
 else into a **single vertical scrolling column**. A small engine instead reads the
 shared content's real aspect ratio and lays the participants out:
 
-- **Side or below** — the strip goes where the grey letterbox bars are (below when
-  the content is wider than the focus area, on the side when it's taller).
-- **One line, or two** — prefers a single line of thumbnails, allows a second,
-  never more; scrolls past that while keeping thumbnails legible.
+- **Everyone visible** — tries the strip below and beside the content, in one to
+  three lines, and keeps a layout that shows every participant at a legible size
+  (160×100 at least). Tiles first grow into the grey letterbox bars; when those
+  are too thin, the shared content shrinks (more grey bars) to make room.
+- **Content as large as possible** — among the layouts that show everyone, the one
+  that leaves the shared content biggest, then the one with the biggest tiles.
+- **Scroll from the start** — when even three lines can't show everyone, the strip
+  scrolls along its length, starting at the first participant.
 
 Two sources, shared by all targets:
 
 - `enhance.css` — turns the engine's hooks into the grid. All rules are gated
   behind `.vn-on` on `<html>`, so the toolbar toggle can make them inert.
 - `layout-engine.js` — measures + decides, writing `data-vn-place` / `--vn-lines` /
-  `--vn-strip` onto `.lk-focus-layout` and toggling `.vn-on`. Its decision function
-  is pure and unit-tested (`layout-engine.test.cjs`, run `node --test`).
+  `--vn-tile-w` / `--vn-tile-h` / `--vn-strip` onto `.lk-focus-layout` and toggling
+  `.vn-on`. Its decision function is pure and unit-tested over 2–50 participants,
+  several window sizes and shared-screen shapes (`layout-engine.test.cjs`).
+- `layout-gallery.html` — the real CSS + engine on mocked Visio screen shares, one
+  thumbnail per case: open it to eyeball the layouts. `layout-browser.test.cjs` runs
+  it in headless Chromium/Chrome and checks every tile is reachable, sized and
+  placed as decided (skipped when no browser is found; `$CHROMIUM` picks one).
+  Run everything with `node --test`.
 
 **On/off:** click the toolbar icon for a popup with an Enabled switch (default on).
 The state is stored (`storage` permission) and applied live — no reload. The
@@ -37,13 +47,15 @@ Designs: `../docs/superpowers/specs/2026-09-29-global-mute-design.md`,
 
 ## Design notes
 
-See [`../docs/superpowers/specs/2026-07-02-meet-adaptive-layout-engine-design.md`](../docs/superpowers/specs/2026-07-02-meet-adaptive-layout-engine-design.md).
-Tunables (min tile size, max lines, max strip fraction) are constants in
-`layout-engine.js`, overridable at runtime via `window.__vnMeet.config`.
+See [`../docs/superpowers/specs/2026-11-13-layout-engine-fit-everyone-design.md`](../docs/superpowers/specs/2026-11-13-layout-engine-fit-everyone-design.md)
+(which supersedes the decision rule of `2026-07-02-meet-adaptive-layout-engine-design.md`).
+Tunables are constants in `layout-engine.js` (`minTileW` 160, `maxLines` 3,
+`maxFraction` 0.4 — how much of the area the strip may take from the content),
+overridable at runtime via `window.__vnMeet.config`.
 
-> Validated against LiveKit's stock CSS + Meet's live DOM and unit tests, but the
-> grid CSS itself hasn't been eyeballed on the running site — expect one round of
-> live tuning of the section 2/3 rules in `enhance.css`.
+> The grid CSS is checked in headless Chromium against LiveKit's stock CSS (see
+> `layout-gallery.html`), not against Visio's own styles: check the running site
+> after changing sections 2–4 of `enhance.css`.
 
 ## 1. Bookmarklet (any browser, zero install)
 
@@ -107,6 +119,9 @@ Unsigned Extensions** during development.)
 | `layout-engine.js` | Measures + decides; writes the layout hooks |
 | `enhance.css` | Turns the hooks into the grid (JS-off fallback included) |
 | `layout-engine.test.cjs` | Unit tests for the pure decision (`node --test`) |
+| `layout-gallery.html` | Thumbnails of mocked screen shares laid out by the real CSS + engine |
+| `layout-case.html` | One mocked screen share (`?ar=&n=`); reports its measurements to the gallery |
+| `layout-browser.test.cjs` | Runs the gallery in headless Chromium/Chrome and checks each case |
 | `call-bridge.js` | Site-independent core: reports the call's mute state; mutes on command |
 | `call-bridge.test.cjs` | Unit tests for the core's pure decisions (`node --test`) |
 | `providers/*.js` | Per-site adapters (Visio, Google Meet, Teams): read the state, toggle |
