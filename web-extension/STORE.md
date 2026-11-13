@@ -33,6 +33,29 @@ Auto-update is automatic once published.
 3. The `browser_specific_settings.gecko.id` is already set, so signing just works.
 4. Mostly automated review (minutes–hours).
 
+## Automated publishing
+
+`Scripts/release.sh X.Y.Z` gives the app and the extension the same version and pushes
+a `vX.Y.Z` tag. `.github/workflows/publish-extension.yml` then tests the extension
+(the layout's browser check runs in Chrome on a macOS runner), packages it, and
+submits it to both stores, where it goes through the usual review: listed on Firefox
+Add-ons, and to the Chrome Web Store. The listing text and screenshots stay manual.
+
+One-time setup, as repository secrets (`gh secret set NAME`):
+
+- `AMO_API_KEY`, `AMO_API_SECRET` — the JWT issuer and secret from
+  <https://addons.mozilla.org/developers/addon/api/key/>.
+- `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN` — an OAuth client of a
+  Google Cloud project with the Chrome Web Store API enabled, and a refresh token for
+  the account that owns the item: follow
+  <https://github.com/fregante/chrome-webstore-upload-keys>.
+- `CWS_PUBLISHER_ID` — your developer account's id (not the extension's), in the
+  Chrome Web Store Developer Dashboard's URL when logged in.
+
+The extension's id (`fnfaiohgodmlfmgoocfiefllaibipimc`) is written in the workflow.
+Until the secrets exist the workflow stops and names the missing ones; to publish a
+tag again: `gh workflow run publish-extension.yml -f tag=vX.Y.Z`.
+
 ---
 
 ## Listing copy (paste)
@@ -45,9 +68,10 @@ Auto-update is automatic once published.
 > On Visio (La Suite numérique, built on LiveKit), when someone shares their screen
 > everyone else is squeezed into a single scrolling column. This extension reads
 > the shared content's real aspect ratio and lays the participants out
-> intelligently: beside the screen or below it — wherever the grey letterbox bars
-> leave room — in one or two lines, so you can see more faces at once. Toggle it on
-> or off from the toolbar.
+> intelligently: beside the screen or below it, using the grey letterbox bars first,
+> in as many lines as it takes to keep everyone in view. It shrinks the shared screen
+> only when it must, and when there are too many people to fit, the strip scrolls
+> from the first one. Toggle it on or off from the toolbar.
 >
 > With the companion VisioNext macOS app, its global shortcut also mutes your
 > microphone in every open call at once: Visio always, and Google Meet or Teams if

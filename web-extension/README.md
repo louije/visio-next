@@ -100,7 +100,9 @@ Same folder, same MV3 manifest (the Firefox add-on id lives in
 node package.mjs   # -> dist/web-extension.zip (manifest + css + js)
 ```
 
-One zip works for both stores; the Firefox id is baked into the manifest.
+One zip works for both stores; the Firefox id is baked into the manifest. Releases
+(`Scripts/release.sh X.Y.Z`) submit it to both stores from GitHub Actions: see
+`STORE.md`, "Automated publishing".
 
 ## 4. Safari (bundled with VisioNext.app)
 
