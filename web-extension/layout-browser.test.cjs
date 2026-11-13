@@ -1,6 +1,7 @@
 // The layout in a real browser: loads layout-gallery.html in headless Chromium (or
 // Chrome) and checks every mocked screen share it reports. Run: node --test
-// Skipped when no browser is found; point $CHROMIUM at one to choose.
+// Skipped when no browser is found, except on CI ($CI), where it fails instead;
+// point $CHROMIUM at one to choose.
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { execFileSync } = require('node:child_process');
@@ -28,7 +29,10 @@ function runGallery() {
   return { expected: +m[1], results: text ? JSON.parse(text) : [] };
 }
 
-test('layout in a real browser', { skip: !BROWSER && 'no Chromium or Chrome found (set $CHROMIUM)' }, async (t) => {
+const NO_BROWSER = !BROWSER && 'no Chromium or Chrome found (set $CHROMIUM)';
+
+test('layout in a real browser', { skip: !process.env.CI && NO_BROWSER }, async (t) => {
+  assert.ok(BROWSER, NO_BROWSER);
   const { expected, results } = runGallery();
   assert.equal(results.length, expected, 'every case reported');
 
