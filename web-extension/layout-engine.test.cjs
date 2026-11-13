@@ -98,6 +98,15 @@ test('the same on a laptop with the chat open -> it scrolls, using the whole ban
   assert.equal(shown(1280, 620, 0.6, d), 1);
 });
 
+test('a scrolling strip makes room for a visible scrollbar; one that fits needs none', () => {
+  const scrolling = decideLayout({ areaW: 1411, areaH: 893, contentAR: 16 / 10, count: 50, gap: GAP, scrollbar: 15 });
+  assert.equal(scrolling.overflow, true);
+  const across = scrolling.place === 'below' ? scrolling.tileH : scrolling.tileW;
+  assert.equal(scrolling.strip, scrolling.lines * across + (scrolling.lines - 1) * GAP + 15);
+  const fitting = { areaW: 1411, areaH: 893, contentAR: 2.58, count: 4, gap: GAP };
+  assert.deepEqual(decideLayout({ ...fitting, scrollbar: 15 }), decideLayout(fitting));
+});
+
 test('more people than fit at minimum size -> the strip scrolls, with its most lines', () => {
   const d = decideLayout({ areaW: 1411, areaH: 893, contentAR: 16 / 10, count: 50, gap: GAP });
   assert.equal(d.overflow, true);
@@ -118,14 +127,17 @@ test('an unknown content ratio is laid out as content filling the area', () => {
 const AREAS = [[1411, 893], [1280, 620], [1880, 960], [900, 800], [2400, 1200]];
 const RATIOS = [9 / 16, 0.6, 3 / 4, 4 / 3, 16 / 10, 16 / 9, 21 / 9, 2.58, 32 / 9];
 
+// Scrollbars: overlay (macOS with a trackpad) or always visible (a mouse, Windows).
+for (const scrollbar of [0, 15])
 for (const [areaW, areaH] of AREAS) {
   for (const ar of RATIOS) {
-    test(`sweep: ${areaW}x${areaH}, shared screen ${ar.toFixed(2)}:1, 2 to 50 people`, () => {
+    test(`sweep: ${areaW}x${areaH}, shared screen ${ar.toFixed(2)}:1, 2 to 50 people, ${scrollbar}px scrollbars`, () => {
       const full = fullFit(areaW, areaH, ar);
       let prev = null;
       for (let count = 2; count <= 50; count++) {
-        const d = decideLayout({ areaW, areaH, contentAR: ar, count, gap: GAP });
+        const d = decideLayout({ areaW, areaH, contentAR: ar, count, gap: GAP, scrollbar });
         const at = ` (${count} people: ${JSON.stringify(d)})`;
+        const bar = d.overflow ? scrollbar : 0;   // a scrolling strip also holds its scrollbar
         const below = d.place === 'below';
         const lineLen = below ? areaW : areaH;
         const along = below ? d.tileW : d.tileH;
@@ -133,8 +145,8 @@ for (const [areaW, areaH] of AREAS) {
 
         assert.ok(d.tileW >= SQUEEZE_W && d.tileH >= SQUEEZE_H, 'tiles at least the smaller size' + at);
         assert.ok(Math.abs(d.tileW / d.tileH - TILE_AR) < 0.02, 'tiles keep 16:10' + at);
-        assert.equal(d.strip, d.lines * across + (d.lines - 1) * GAP, 'the strip is its lines' + at);
-        assert.ok(d.strip <= room(d.place, d.lines, areaW, areaH, full) + 1e-9,
+        assert.equal(d.strip, d.lines * across + (d.lines - 1) * GAP + bar, 'the strip is its lines (and scrollbar)' + at);
+        assert.ok(d.strip - bar <= room(d.place, d.lines, areaW, areaH, full) + 1e-9,
           'the strip stays within its room (more than three lines only in the band)' + at);
 
         const perLine = Math.floor((lineLen + GAP) / (along + GAP));

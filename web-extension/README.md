@@ -15,7 +15,8 @@ shared content's real aspect ratio and lays the participants out:
   that leaves the shared content biggest, then the one with the biggest tiles.
 - **Scroll from the start** — when no layout shows everyone, the strip keeps
   160×100 tiles in as many lines as it may take and scrolls along its length,
-  starting at the first participant.
+  starting at the first participant, leaving room for the scrollbar when it's
+  always visible (a mouse, Windows).
 
 Two sources, shared by all targets:
 

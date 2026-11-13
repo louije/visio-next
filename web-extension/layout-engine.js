@@ -29,7 +29,9 @@
    * visible (tiles shown without scrolling) }. Best = everyone visible if any layout
    * allows it, then the largest content, then the most tiles shown, the biggest
    * tiles, the fewest lines. Tiles keep minTileW when that shows everyone, shrink to
-   * squeezeTileW only when that's what does, and scroll at minTileW otherwise.
+   * squeezeTileW only when that's what does, and scroll at minTileW otherwise. A
+   * scrolling strip is `scrollbar` px thicker, so a visible scrollbar (a mouse,
+   * Windows) doesn't cover its last line.
    */
   function decideLayout(o) {
     var areaW = o.areaW, areaH = o.areaH;
@@ -39,6 +41,7 @@
     var maxFraction = o.maxFraction != null ? o.maxFraction : 0.4;
     var minTileW = o.minTileW != null ? o.minTileW : 160;
     var squeezeTileW = o.squeezeTileW != null ? o.squeezeTileW : 128;
+    var scrollbar = o.scrollbar || 0;
 
     var known = !!(o.contentAR && isFinite(o.contentAR) && o.contentAR > 0);
     var cAR = known ? o.contentAR : areaW / areaH;
@@ -68,7 +71,7 @@
       var w = fits ? Math.min(lineFit, Math.max(tileMin, widthFor(Math.min(cap, band - gap)))) : tileMin;
       var tileW = Math.floor(w + 1e-6), tileH = Math.floor(tileW / TILE_AR + 1e-6);
 
-      var strip = lines * (below ? tileH : tileW) + (lines - 1) * gap;
+      var strip = lines * (below ? tileH : tileW) + (lines - 1) * gap + (fits ? 0 : scrollbar);
       var boxW = below ? areaW : areaW - strip - gap;
       var boxH = below ? areaH - strip - gap : areaH;
       var shownPerLine = Math.floor((lineLen + gap) / ((below ? tileW : tileH) + gap));
@@ -148,6 +151,19 @@
     };
   }
 
+  // How much room a scrollbar takes (0 when scrollbars overlay the content, as on a
+  // Mac with a trackpad). Measured each time: plugging a mouse in can change it. The
+  // probe carries the carousel's class to pick up any scrollbar styling Visio gives it.
+  function scrollbarSize() {
+    var probe = document.createElement('div');
+    probe.className = 'lk-carousel';
+    probe.style.cssText = 'position: absolute; top: -999px; width: 100px; height: 100px; overflow: scroll';
+    document.body.appendChild(probe);
+    var size = probe.offsetWidth - probe.clientWidth;
+    probe.remove();
+    return size;
+  }
+
   function setVar(el, name, value) {
     if (el.style.getPropertyValue(name) !== String(value)) {
       el.style.setProperty(name, String(value));
@@ -193,7 +209,8 @@
 
     apply(focus, decideLayout({
       areaW: box.w, areaH: box.h, contentAR: contentAR, count: count,
-      gap: gap(focus), minTileW: CONFIG.minTileW, squeezeTileW: CONFIG.squeezeTileW,
+      gap: gap(focus), scrollbar: scrollbarSize(),
+      minTileW: CONFIG.minTileW, squeezeTileW: CONFIG.squeezeTileW,
       maxLines: CONFIG.maxLines, maxFraction: CONFIG.maxFraction,
     }));
   }
