@@ -145,3 +145,4 @@ Unsigned Extensions** during development.)
 | `build-bookmarklet.mjs` | Bundles CSS+JS into `dist/bookmarklet.txt` + `dist/install.html` |
 | `package.mjs` | Zips manifest + css + js + icons into `dist/web-extension.zip` |
 | `publish-chrome.mjs` | Uploads that zip to the Chrome Web Store and submits it (release workflow) |
+| `chrome-refresh-token.mjs` | One-time: gets the Chrome Web Store refresh token from Google (see `STORE.md`) |

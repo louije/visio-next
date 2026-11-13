@@ -61,20 +61,19 @@ One-time setup, as repository secrets (`gh secret set NAME`):
    continue anyway.
 3. Credentials → Create credentials → **OAuth client ID**, type **Desktop app**. Its
    client ID and secret are `CWS_CLIENT_ID` and `CWS_CLIENT_SECRET`.
-4. Open, signed in as the account that owns the item (with your client ID):
-   `https://accounts.google.com/o/oauth2/v2/auth?client_id=CLIENT_ID&redirect_uri=http://127.0.0.1:8818&response_type=code&scope=https://www.googleapis.com/auth/chromewebstore&access_type=offline&prompt=consent`
-   Allow; the browser then fails to load `http://127.0.0.1:8818/?code=…`. Copy the
-   `code` value from the address bar (turn any `%2F` into `/`).
-5. In your own terminal (it prints the token), exchange it:
+4. From the repo, in your own terminal, run `chrome-refresh-token.mjs`: it opens
+   Google's sign-in (sign in as the account that owns the item; as the app's owner,
+   go past the "unverified app" warning with Advanced), catches the code on a local
+   port, exchanges it at once, and stores all three secrets:
 
    ```sh
-   read -r CLIENT_ID; read -rs CLIENT_SECRET; read -rs CODE
-   curl -s https://oauth2.googleapis.com/token -d grant_type=authorization_code \
-     -d client_id="$CLIENT_ID" --data-urlencode client_secret="$CLIENT_SECRET" \
-     --data-urlencode code="$CODE" -d redirect_uri=http://127.0.0.1:8818
+   read -r "CWS_CLIENT_ID?Client ID: "; read -rs "CWS_CLIENT_SECRET?Client secret (hidden): "; echo
+   export CWS_CLIENT_ID CWS_CLIENT_SECRET
+   TOKEN=$(node web-extension/chrome-refresh-token.mjs) \
+   && printf %s "$CWS_CLIENT_ID" | gh secret set CWS_CLIENT_ID \
+   && printf %s "$CWS_CLIENT_SECRET" | gh secret set CWS_CLIENT_SECRET \
+   && printf %s "$TOKEN" | gh secret set CWS_REFRESH_TOKEN
    ```
-
-   The `refresh_token` in the answer is `CWS_REFRESH_TOKEN`.
 
 The extension's id (`fnfaiohgodmlfmgoocfiefllaibipimc`) is written in the workflow.
 Until the secrets exist the workflow stops and names the missing ones; to publish a
