@@ -3,6 +3,14 @@
     <channel>
         <title>VisioNext</title>
         <item>
+            <title>0.6.1</title>
+            <pubDate>Fri, 13 Nov 2026 13:14:58 +0100</pubDate>
+            <sparkle:version>11</sparkle:version>
+            <sparkle:shortVersionString>0.6.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/louije/visio-next/releases/download/v0.6.1/VisioNext-0.6.1.zip" length="4557109" type="application/octet-stream" sparkle:edSignature="jpD6vqQt6RzpXt6i3UzHzkTUow7/NhT20HDKUFnh76vkXFEh0GacYDo+28KneWc4ip36lz8LMtJ/qVjzmJ2bAw=="/>
+        </item>
+        <item>
             <title>0.6.0</title>
             <pubDate>Fri, 13 Nov 2026 13:08:28 +0100</pubDate>
             <sparkle:version>10</sparkle:version>
@@ -17,14 +25,6 @@
             <sparkle:shortVersionString>0.5.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <enclosure url="https://github.com/louije/visio-next/releases/download/v0.5.1/VisioNext-0.5.1.zip" length="4553828" type="application/octet-stream" sparkle:edSignature="2QfZctlwy+GNQXBJsIQtA0+54SZegiQ1hs/CXcuDcnST1Mqs3s3comfpbE4LpE1s6q+h3uRyKa4rF+k+gN8NBg=="/>
-        </item>
-        <item>
-            <title>0.5.0</title>
-            <pubDate>Fri, 02 Oct 2026 16:00:03 +0200</pubDate>
-            <sparkle:version>8</sparkle:version>
-            <sparkle:shortVersionString>0.5.0</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://github.com/louije/visio-next/releases/download/v0.5.0/VisioNext-0.5.0.zip" length="4544062" type="application/octet-stream" sparkle:edSignature="B4q91+ENnlinGtyfc9k9uxhKqRMWqCR/AmpOfyh8HyvPUX5utBBDHy1DljffW4amOFX1xSR/6u0hPA2Te9t/AQ=="/>
         </item>
     </channel>
 </rss>
