@@ -21,7 +21,7 @@ function runGallery() {
   // The window fits every thumbnail: offscreen frames don't run, so wouldn't report.
   const html = execFileSync(BROWSER, [
     '--headless', '--disable-gpu', '--autoplay-policy=no-user-gesture-required',
-    '--window-size=1800,4800', '--virtual-time-budget=20000', '--dump-dom', url,
+    '--window-size=1800,5600', '--virtual-time-budget=20000', '--dump-dom', url,
   ], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'], timeout: 120000 });
   const m = /<pre id="results" data-expected="(\d+)">([^<]*)<\/pre>/.exec(html);
   assert.ok(m, 'the gallery has no results');
@@ -43,7 +43,7 @@ test('layout in a real browser', { skip: !process.env.CI && NO_BROWSER }, async 
       assert.deepEqual(r.problems, []);
 
       // The controller measured the content box and gap, and the CSS drew its decision.
-      const d = decideLayout({ areaW: r.area.w, areaH: r.area.h, contentAR: r.ar, count: r.n, gap: r.gap });
+      const d = decideLayout({ areaW: r.area.w, areaH: r.area.h, contentAR: r.ar, count: r.n, gap: r.gap, scrollbar: r.scrollbar });
       assert.deepEqual(
         { place: r.place, lines: r.lines, tileW: r.tileW, tileH: r.tileH },
         { place: d.place, lines: d.lines, tileW: d.tileW, tileH: d.tileH });

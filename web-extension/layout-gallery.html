@@ -32,6 +32,7 @@
   var AREAS = [[1411, 893], [1280, 620], [900, 800], [1880, 960]];
   var RATIOS = [[9 / 16, '9:16'], [0.6, 'Notion 0.6:1'], [4 / 3, '4:3'], [16 / 9, '16:9'], [2.58, '2.58:1'], [32 / 9, '32:9']];
   var COUNTS = [2, 4, 7, 12, 20, 50];
+  var WITH_SCROLLBARS = 50;   // also shown with always-visible scrollbars (a mouse, Windows)
   var PAD = 8;   // LiveKit pads the focus layout by --lk-grid-gap
   var THUMB = 216;
 
@@ -39,8 +40,10 @@
   var captions = {};
   AREAS.forEach(function (area) {
     RATIOS.forEach(function (ratio) {
-      COUNTS.forEach(function (n) {
-        var id = area[0] + 'x' + area[1] + ', ' + ratio[1] + ', ' + n + ' people';
+      var runs = COUNTS.map(function (n) { return { n: n }; }).concat({ n: WITH_SCROLLBARS, bars: 1 });
+      runs.forEach(function (run) {
+        var n = run.n;
+        var id = area[0] + 'x' + area[1] + ', ' + ratio[1] + ', ' + n + ' people' + (run.bars ? ', scrollbars' : '');
         var w = area[0] + 2 * PAD, h = area[1] + 2 * PAD, scale = THUMB / w;
         var figure = document.createElement('figure');
         var frame = document.createElement('div');
@@ -50,7 +53,9 @@
         iframe.width = w;
         iframe.height = h;
         iframe.style.transform = 'scale(' + scale + ')';
-        iframe.src = 'layout-case.html?' + new URLSearchParams({ id: id, ar: ratio[0], n: n });
+        var query = { id: id, ar: ratio[0], n: n };
+        if (run.bars) query.bars = 1;
+        iframe.src = 'layout-case.html?' + new URLSearchParams(query);
         var caption = document.createElement('figcaption');
         caption.textContent = id + ' …';
         frame.appendChild(iframe);

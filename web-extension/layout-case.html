@@ -2,8 +2,9 @@
 <!--
   One mocked Visio screen share for layout-gallery.html: LiveKit's focus layout with
   a shared screen of the given ratio and n participant tiles, laid out by the real
-  enhance.css + layout-engine.js. Query: ?id=<case>&ar=<screen w/h>&n=<tiles>. The
-  page is the size of its iframe. Reports what it measured to the parent page.
+  enhance.css + layout-engine.js. Query: ?id=<case>&ar=<screen w/h>&n=<tiles>[&bars=1],
+  where bars=1 forces always-visible scrollbars (a mouse, Windows). The page is the
+  size of its iframe. Reports what it measured to the parent page.
 -->
 <html data-lk-theme="default">
 <head>
@@ -44,6 +45,13 @@
 <script>
   var query = new URLSearchParams(location.search);
   var id = query.get('id'), ar = +query.get('ar'), n = +query.get('n');
+
+  if (query.get('bars')) {
+    var bars = document.createElement('style');
+    bars.textContent = '::-webkit-scrollbar { width: 12px; height: 12px; background: #222 }' +
+      '::-webkit-scrollbar-thumb { background: #888; border-radius: 6px }';
+    document.head.appendChild(bars);
+  }
 
   var aside = document.querySelector('aside.lk-carousel');
   for (var i = 1; i <= n; i++) {
@@ -121,8 +129,15 @@
       if (Math.abs(before - after) > 1) problems.push('the tiles are not centred in the strip');
     }
 
+    // How much room a scrollbar takes here (0 when they overlay the content).
+    var probe = document.createElement('div');
+    probe.style.cssText = 'position: absolute; top: -999px; width: 100px; height: 100px; overflow: scroll';
+    document.body.appendChild(probe);
+    var scrollbar = probe.offsetWidth - probe.clientWidth;
+    probe.remove();
+
     parent.postMessage({
-      id: id, n: n,
+      id: id, n: n, scrollbar: scrollbar,
       ar: video.videoWidth / video.videoHeight,   // what the engine sees (the canvas is rounded)
       area: { w: box.right - box.left, h: box.bottom - box.top },
       gap: parseFloat(cs.rowGap),
