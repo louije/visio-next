@@ -5,16 +5,17 @@
  * hooks onto `.lk-focus-layout`:
  *
  *   data-vn-place = "side" | "below"     (which axis has the grey bars)
- *   --vn-lines    = 1 | 2                 (columns when side / rows when below)
+ *   --vn-lines    = 1 | 2 | 3             (columns when side / rows when below)
+ *   --vn-tile-w, --vn-tile-h = <px>       (tile size)
  *   --vn-strip    = <px>                  (strip thickness)
  *
  * Everything here is gated behind `.vn-on` on <html>, which the engine adds only
  * while enabled (toolbar toggle). Turn it off → the class is removed → these rules
  * go inert and Meet's own layout returns. Selectors `.lk-carousel` /
  * `data-lk-orientation` are set imperatively by Meet's CarouselLayout, so they're
- * stable despite Panda's hashed classes. Tiles keep LiveKit's 16:10 aspect ratio.
+ * stable despite Panda's hashed classes.
  *
- * Tunables live in layout-engine.js (minTileW/minTileH/maxLines/maxFraction).
+ * Tunables live in layout-engine.js (minTileW/maxLines/maxFraction).
  */
 
 :root {
@@ -22,12 +23,13 @@
   --vn-min-tile: 132px;      /* JS-off decision: min tile before wrapping */
 }
 
-/* 1. Base — the carousel is a grid; drop Meet's inline min-width:200px on the
- *    aside (otherwise it overflows a narrower --vn-strip track and overlaps the
- *    video), and drop LiveKit's per-tile height calc so tiles size by aspect. */
+/* 1. Base — the carousel is a grid with the focus grid's gap (the engine reads
+ *    that gap); drop Meet's inline min-width:200px on the aside (otherwise it
+ *    overflows a narrower --vn-strip track and overlaps the video), and drop
+ *    LiveKit's per-tile height calc. */
 .vn-on aside.lk-carousel {
   display: grid !important;
-  gap: var(--lk-grid-gap, 0.5rem) !important;
+  gap: inherit !important;
   align-content: start !important;
   min-width: 0 !important;
   min-height: 0 !important;
@@ -47,25 +49,37 @@
   min-height: 0 !important;
 }
 
-/* 2. SIDE — columns down the height, strip on the left (the grey L/R bar side). */
+/* 2. Strip — tiles at the engine's size, in --vn-lines lines. Centred when they
+ *    fit; when they scroll, `safe` puts the first tile at the start instead (a
+ *    centred overflow pushes the first tiles to a negative scroll offset, out of
+ *    reach). Browsers without `safe` keep `start`. */
+.vn-on .lk-focus-layout[data-vn-place] > aside.lk-carousel {
+  justify-content: start !important;
+  justify-content: safe center !important;
+  align-content: start !important;
+  align-content: safe center !important;
+}
+.vn-on .lk-focus-layout[data-vn-place] > aside.lk-carousel > * {
+  width: var(--vn-tile-w) !important;
+  height: var(--vn-tile-h) !important;
+}
+
+/* 3. SIDE — the strip is on the left (the grey L/R bar side): --vn-lines
+ *    columns, scrolling down. */
 .vn-on .lk-focus-layout[data-vn-place="side"] {
   grid-template-columns: var(--vn-strip, 200px) minmax(0, 1fr) !important;
   grid-template-rows: minmax(0, 1fr) !important;
 }
 .vn-on .lk-focus-layout[data-vn-place="side"] > aside.lk-carousel {
-  grid-template-columns: repeat(var(--vn-lines, 1), minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(var(--vn-lines, 1), var(--vn-tile-w)) !important;
   grid-auto-flow: row !important;
-  grid-auto-rows: min-content !important;
+  grid-auto-rows: var(--vn-tile-h) !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
 }
-.vn-on .lk-focus-layout[data-vn-place="side"] > aside.lk-carousel > * {
-  width: 100% !important;
-  height: auto !important;
-  aspect-ratio: 16 / 10 !important;
-}
 
-/* 3. BELOW — rows across the width, strip beneath (the grey T/B bar side). */
+/* 4. BELOW — the strip is beneath (the grey T/B bar side): --vn-lines rows,
+ *    scrolling sideways. */
 .vn-on .lk-focus-layout[data-vn-place="below"] {
   grid-template-columns: minmax(0, 1fr) !important;
   grid-template-rows: minmax(0, 1fr) var(--vn-strip, 140px) !important;
@@ -77,20 +91,14 @@
 .vn-on .lk-focus-layout[data-vn-place="below"] > aside.lk-carousel {
   grid-row: 2 !important;
   grid-column: 1 !important;
-  grid-template-rows: repeat(var(--vn-lines, 1), minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(var(--vn-lines, 1), var(--vn-tile-h)) !important;
   grid-auto-flow: column !important;
-  grid-auto-columns: max-content !important;
-  justify-content: center !important;
+  grid-auto-columns: var(--vn-tile-w) !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
 }
-.vn-on .lk-focus-layout[data-vn-place="below"] > aside.lk-carousel > * {
-  height: 100% !important;
-  width: auto !important;
-  aspect-ratio: 16 / 10 !important;
-}
 
-/* 4. Fallback (engine hasn't decided yet) — widen the stock 1fr | 5fr focus grid
+/* 5. Fallback (engine hasn't decided yet) — widen the stock 1fr | 5fr focus grid
  *    and auto-wrap the vertical column into as many tiles as fit. */
 .vn-on .lk-focus-layout:not([data-vn-place]):has(> aside.lk-carousel[data-lk-orientation="vertical"]) {
   grid-template-columns: minmax(0, var(--vn-fallback-max)) minmax(0, 1fr) !important;

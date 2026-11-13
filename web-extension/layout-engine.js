@@ -2,12 +2,13 @@
  * VisioNext — adaptive participant-strip layout engine for Meet / LiveKit.
  *
  * Decides where the participant strip goes (beside or below the featured
- * screen/participant) and how many lines it uses, based on the shared content's
- * real aspect ratio — then writes a few hooks onto `.lk-focus-layout` that
- * enhance.css turns into the actual grid:
+ * screen/participant), how many lines it uses and how big its tiles are, so that
+ * everyone fits — based on the shared content's real aspect ratio — then writes a
+ * few hooks onto `.lk-focus-layout` that enhance.css turns into the actual grid:
  *
  *   data-vn-place = "side" | "below"
- *   --vn-lines    = 1 | 2
+ *   --vn-lines    = 1 | 2 | 3
+ *   --vn-tile-w   = <px>, --vn-tile-h = <px>
  *   --vn-strip    = <px>
  *
  * The decision logic (decideLayout) is pure and unit-tested from Node; the DOM
@@ -106,7 +107,7 @@
   // ---- DOM controller (browser only) --------------------------------------
   if (typeof document === 'undefined') return;
 
-  var CONFIG = { minTileW: 132, minTileH: 100, maxLines: 2, maxFraction: 0.35 };
+  var CONFIG = { minTileW: 160, maxLines: 3, maxFraction: 0.4 };
   var current = null;   // the bound .lk-focus-layout element
   var ro = null;        // ResizeObserver on it
   var scheduled = false;
@@ -145,12 +146,16 @@
   function apply(focus, d) {
     if (focus.dataset.vnPlace !== d.place) focus.dataset.vnPlace = d.place;
     setVar(focus, '--vn-lines', d.lines);
+    setVar(focus, '--vn-tile-w', d.tileW + 'px');
+    setVar(focus, '--vn-tile-h', d.tileH + 'px');
     setVar(focus, '--vn-strip', d.strip + 'px');
   }
 
   function clearHooks(focus) {
     delete focus.dataset.vnPlace;
     focus.style.removeProperty('--vn-lines');
+    focus.style.removeProperty('--vn-tile-w');
+    focus.style.removeProperty('--vn-tile-h');
     focus.style.removeProperty('--vn-strip');
   }
 
@@ -177,7 +182,7 @@
 
     apply(focus, decideLayout({
       areaW: box.w, areaH: box.h, contentAR: contentAR, count: count,
-      gap: gap(focus), minTileW: CONFIG.minTileW, minTileH: CONFIG.minTileH,
+      gap: gap(focus), minTileW: CONFIG.minTileW,
       maxLines: CONFIG.maxLines, maxFraction: CONFIG.maxFraction,
     }));
   }
