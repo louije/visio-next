@@ -48,8 +48,10 @@ gh auth status >/dev/null 2>&1 || { echo "error: gh not authenticated (gh auth l
 security find-identity -v -p codesigning | grep -q "Developer ID Application" \
   || { echo "error: no Developer ID Application certificate in keychain" >&2; exit 1; }
 command -v create-dmg >/dev/null || { echo "error: npm install --global create-dmg" >&2; exit 1; }
-xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1 \
-  || { echo "error: notarytool profile '$NOTARY_PROFILE' missing. Run: xcrun notarytool store-credentials $NOTARY_PROFILE" >&2; exit 1; }
+# Show notarytool's own answer: a missing profile and an expired Apple agreement fail alike.
+NOTARY_CHECK="$(xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" 2>&1)" \
+  || { echo "error: notarytool can't use the '$NOTARY_PROFILE' profile:" >&2; echo "$NOTARY_CHECK" | head -3 >&2
+       echo "(if the profile is missing: xcrun notarytool store-credentials $NOTARY_PROFILE)" >&2; exit 1; }
 (cd "$ROOT/web-extension" && node --test >/dev/null 2>&1) \
   || { echo "error: the web extension's tests fail (cd web-extension && node --test)" >&2; exit 1; }
 
