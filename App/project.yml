@@ -28,8 +28,8 @@ packages:
 # these two lines. Keep them here, not per-target.
 settings:
   base:
-    MARKETING_VERSION: "0.6.0"
-    CURRENT_PROJECT_VERSION: "10"
+    MARKETING_VERSION: "0.6.1"
+    CURRENT_PROJECT_VERSION: "11"
 targets:
   VisioNext:
     type: application
