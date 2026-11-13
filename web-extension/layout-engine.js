@@ -19,48 +19,83 @@
 
   var TILE_AR = 16 / 10; // LiveKit `.lk-carousel > *` aspect-ratio (width/height)
 
-  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-
   /**
    * Pure layout decision. All inputs are numbers (px / ratio / count).
-   * Returns { place: 'side'|'below', lines: 1|2, strip: <px> }.
+   *
+   * Tries the strip below and beside the content, in 1..maxLines lines, and returns
+   * the best as { place: 'below'|'side', lines, tileW, tileH, strip (px), overflow
+   * (the strip scrolls), scale (content size against untouched, 0..1), visible
+   * (tiles shown without scrolling) }. Best = everyone visible if any layout allows
+   * it, then the largest content, then the most tiles shown, the biggest tiles, the
+   * fewest lines.
    */
   function decideLayout(o) {
     var areaW = o.areaW, areaH = o.areaH;
     var count = Math.max(1, o.count | 0);
     var gap = o.gap != null ? o.gap : 8;
-    var maxLines = o.maxLines != null ? o.maxLines : 2;
-    var maxFraction = o.maxFraction != null ? o.maxFraction : 0.35;
-    var minTileW = o.minTileW != null ? o.minTileW : 132;
-    var minTileH = o.minTileH != null ? o.minTileH : 100;
+    var maxLines = o.maxLines != null ? o.maxLines : 3;
+    var maxFraction = o.maxFraction != null ? o.maxFraction : 0.4;
+    var minTileW = o.minTileW != null ? o.minTileW : 160;
 
-    var areaAR = areaW / areaH;
     var known = !!(o.contentAR && isFinite(o.contentAR) && o.contentAR > 0);
-    var cAR = known ? o.contentAR : areaAR;
+    var cAR = known ? o.contentAR : areaW / areaH;
+    // The content fitted to the whole area; the grey band is what it leaves.
+    var fullW = Math.min(areaW, areaH * cAR), fullH = fullW / cAR;
 
-    // Only flip to 'below' when we actually know the content is wider than the
-    // area; with unknown content, fall back to the familiar side column.
-    if (known && cAR >= areaAR) {
-      // BELOW: rows across the width. Grey bars are top/bottom.
-      var contentH = areaW / cAR;                       // content fitted to width
-      var barSlackH = Math.max(0, areaH - contentH);
-      var minRowTileW = minTileH * TILE_AR;             // tile width at min row height
-      var perRow = Math.max(1, Math.floor((areaW + gap) / (minRowTileW + gap)));
-      var rowsB = clamp(Math.ceil(count / perRow), 1, maxLines);
-      var desiredH = rowsB * minTileH + (rowsB - 1) * gap;
-      var stripH = Math.min(maxFraction * areaH, Math.max(desiredH, barSlackH));
-      return { place: 'below', lines: rowsB, strip: Math.round(stripH) };
+    function candidate(place, lines) {
+      var below = place === 'below';
+      var lineLen = below ? areaW : areaH;       // the strip's lines run along this
+      var depth = below ? areaH : areaW;         // and its thickness is taken from this
+      var band = depth - (below ? fullH : fullW);
+      var along = below ? 1 : 1 / TILE_AR;       // tile extent along a line, per px of tile width
+      var across = below ? 1 / TILE_AR : 1;      // tile extent across a line, per px of tile width
+      var perLine = Math.ceil(count / lines);
+      var cap = maxFraction * depth;
+      function widthFor(thickness) { return (thickness - (lines - 1) * gap) / lines / across; }
+
+      // Minimum-size tiles may take up to the cap, or the whole band when it's bigger
+      // (free space is never refused). One line is always an option.
+      if (lines > 1 && widthFor(Math.max(cap, band - gap)) < minTileW) return null;
+      var lineFit = (lineLen - (perLine - 1) * gap) / perLine / along;
+      var fits = lineFit >= minTileW;
+      // Grow only into the band, up to the cap; never below the minimum (the content
+      // shrinks instead).
+      var w = fits ? Math.min(lineFit, Math.max(minTileW, widthFor(Math.min(cap, band - gap)))) : minTileW;
+      var tileW = Math.floor(w + 1e-6), tileH = Math.floor(tileW / TILE_AR + 1e-6);
+
+      var strip = lines * (below ? tileH : tileW) + (lines - 1) * gap;
+      var boxW = below ? areaW : areaW - strip - gap;
+      var boxH = below ? areaH - strip - gap : areaH;
+      var shownPerLine = Math.floor((lineLen + gap) / ((below ? tileW : tileH) + gap));
+      return {
+        place: place, lines: lines, tileW: tileW, tileH: tileH, strip: strip,
+        overflow: !fits,
+        scale: Math.round(Math.max(0, Math.min(1, boxW / fullW, boxH / fullH)) * 1000) / 1000,
+        visible: Math.min(count, shownPerLine * lines),
+      };
     }
 
-    // SIDE: columns down the height. Grey bars are left/right.
-    var contentW = areaH * cAR;                         // content fitted to height
-    var barSlackW = Math.max(0, areaW - contentW);
-    var minColTileH = minTileW / TILE_AR;               // tile height at min col width
-    var perCol = Math.max(1, Math.floor((areaH + gap) / (minColTileH + gap)));
-    var colsS = clamp(Math.ceil(count / perCol), 1, maxLines);
-    var desiredW = colsS * minTileW + (colsS - 1) * gap;
-    var stripW = Math.min(maxFraction * areaW, Math.max(desiredW, barSlackW));
-    return { place: 'side', lines: colsS, strip: Math.round(stripW) };
+    function better(a, b) {
+      if (a.scale !== b.scale) return a.scale > b.scale;
+      if (a.visible !== b.visible) return a.visible > b.visible;
+      if (a.tileW !== b.tileW) return a.tileW > b.tileW;
+      return a.lines < b.lines;
+    }
+
+    var fitting = [], scrolling = [];
+    ['below', 'side'].forEach(function (place) {
+      var most = null; // this place's scrolling layout with the most lines
+      for (var lines = 1; lines <= maxLines; lines++) {
+        var c = candidate(place, lines);
+        if (!c) break; // more lines take even more room
+        if (c.overflow) most = c; else fitting.push(c);
+      }
+      if (most) scrolling.push(most);
+    });
+    // Nobody fits: each place scrolls with its most lines (so the strip doesn't
+    // fall back to one line as people join), and the content picks the place.
+    var pool = fitting.length ? fitting : scrolling;
+    return pool.reduce(function (best, c) { return better(c, best) ? c : best; });
   }
 
   // Export the pure part for the Node test; harmless in the browser.
