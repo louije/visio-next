@@ -1,0 +1,134 @@
+<!doctype html>
+<!--
+  One mocked Visio screen share for layout-gallery.html: LiveKit's focus layout with
+  a shared screen of the given ratio and n participant tiles, laid out by the real
+  enhance.css + layout-engine.js. Query: ?id=<case>&ar=<screen w/h>&n=<tiles>. The
+  page is the size of its iframe. Reports what it measured to the parent page.
+-->
+<html data-lk-theme="default">
+<head>
+<meta charset="utf-8">
+<title>Layout case</title>
+<style>
+  /* The rules of @livekit/components-styles 1.2.0 the layout depends on. */
+  [data-lk-theme=default] { --lk-grid-gap: 0.5rem; --lk-bg2: #1e1e1e; --lk-border-radius: 0.5rem; }
+  .lk-focus-layout { display: grid; grid-template-columns: 1fr 5fr; gap: var(--lk-grid-gap); width: 100%; max-height: 100%; padding: var(--lk-grid-gap); }
+  .lk-carousel { max-height: 100%; display: flex; gap: var(--lk-grid-gap); }
+  .lk-carousel > * { flex-shrink: 0; aspect-ratio: 16 / 10; scroll-snap-align: start; }
+  .lk-carousel[data-lk-orientation=vertical] { flex-direction: column; scroll-snap-type: y mandatory; overflow-y: auto; overflow-x: hidden; }
+  .lk-carousel[data-lk-orientation=vertical] > * { height: calc((100% - var(--lk-grid-gap) * (var(--lk-max-visible-tiles) - 1)) / var(--lk-max-visible-tiles)); }
+  .lk-participant-tile { position: relative; display: flex; flex-direction: column; overflow: hidden; border-radius: var(--lk-border-radius); }
+  .lk-participant-media-video { width: 100%; height: 100%; object-fit: cover; background-color: #000; }
+  .lk-participant-media-video[data-lk-source=screen_share] { object-fit: contain; background-color: var(--lk-bg2); }
+  .lk-focus-layout-wrapper { display: flex; height: 100%; }
+
+  /* The page around it (Visio's reset is border-box). */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #111; color: #fff; font: 24px system-ui; }
+  .name { position: absolute; left: 8px; bottom: 4px; }
+  .lk-participant-tile[data-lk-source=screen_share] { background: #3a3a3a; }   /* the grey bars */
+</style>
+<link rel="stylesheet" href="enhance.css">
+</head>
+<body>
+<div class="lk-focus-layout-wrapper">
+  <div class="lk-focus-layout">
+    <!-- Meet's CarouselLayout writes these inline; the engine's CSS must win. -->
+    <aside class="lk-carousel" data-lk-orientation="vertical" style="--lk-max-visible-tiles: 4; min-width: 200px"></aside>
+    <div class="lk-participant-tile" data-lk-source="screen_share">
+      <video class="lk-participant-media-video" data-lk-source="screen_share" muted autoplay playsinline></video>
+    </div>
+  </div>
+</div>
+<script>
+  var query = new URLSearchParams(location.search);
+  var id = query.get('id'), ar = +query.get('ar'), n = +query.get('n');
+
+  var aside = document.querySelector('aside.lk-carousel');
+  for (var i = 1; i <= n; i++) {
+    var tile = document.createElement('div');
+    tile.className = 'lk-participant-tile';
+    // Coloured on the tile: enhance.css makes video backgrounds transparent.
+    tile.style.background = 'hsl(' + (i * 47 % 360) + ' 35% 40%)';
+    tile.innerHTML = '<video class="lk-participant-media-video"></video><span class="name">' + i + '</span>';
+    aside.appendChild(tile);
+  }
+
+  // The shared screen: a canvas stream of the given ratio, so the engine reads a real
+  // videoWidth/videoHeight once the metadata arrives.
+  var canvas = document.createElement('canvas');
+  canvas.height = 1000;
+  canvas.width = Math.round(1000 * ar);
+  var paint = canvas.getContext('2d');
+  paint.fillStyle = '#7aa7c7';
+  paint.fillRect(0, 0, canvas.width, canvas.height);
+  paint.fillStyle = '#123';
+  paint.font = '120px system-ui';
+  paint.fillText('shared screen ' + ar.toFixed(2) + ':1', 60, 180);
+  var video = document.querySelector('video[data-lk-source=screen_share]');
+  video.srcObject = canvas.captureStream();
+  video.play().catch(function () {});
+</script>
+<script src="layout-engine.js"></script>
+<script>
+  function afterFrames(count, fn) {
+    requestAnimationFrame(function () { count > 1 ? afterFrames(count - 1, fn) : fn(); });
+  }
+
+  // Measured from the DOM, with the strip scrolled to its start.
+  function report() {
+    var focus = document.querySelector('.lk-focus-layout');
+    var featured = focus.querySelector(':scope > .lk-participant-tile');
+    var tiles = Array.prototype.slice.call(aside.children);
+    var cs = getComputedStyle(focus);
+    var outer = focus.getBoundingClientRect();
+    var box = {
+      left: outer.left + parseFloat(cs.paddingLeft), right: outer.right - parseFloat(cs.paddingRight),
+      top: outer.top + parseFloat(cs.paddingTop), bottom: outer.bottom - parseFloat(cs.paddingBottom),
+    };
+    aside.scrollLeft = 0;
+    aside.scrollTop = 0;
+    var s = aside.getBoundingClientRect(), f = featured.getBoundingClientRect(), v = video.getBoundingClientRect();
+    var place = focus.dataset.vnPlace;
+    var problems = [];
+
+    tiles.forEach(function (t, i) {
+      var r = t.getBoundingClientRect();
+      if (r.left < s.left - 1 || r.top < s.top - 1) problems.push('tile ' + (i + 1) + ' starts before the strip: out of reach');
+      if (r.right > s.left + aside.scrollWidth + 1 || r.bottom > s.top + aside.scrollHeight + 1) problems.push('tile ' + (i + 1) + ' is past the scroll range');
+      if (r.width < 159.5 || r.height < 99.5) problems.push('tile ' + (i + 1) + ' is ' + r.width + 'x' + r.height);
+    });
+    [['strip', s], ['shared screen', f]].forEach(function (p) {
+      var r = p[1];
+      if (r.left < box.left - 1 || r.top < box.top - 1 || r.right > box.right + 1 || r.bottom > box.bottom + 1) {
+        problems.push(p[0] + ' spills out of the layout');
+      }
+    });
+    if (f.left < s.right - 1 && s.left < f.right - 1 && f.top < s.bottom - 1 && s.top < f.bottom - 1) {
+      problems.push('the strip overlaps the shared screen');
+    }
+    var scrollsX = aside.scrollWidth > aside.clientWidth + 1, scrollsY = aside.scrollHeight > aside.clientHeight + 1;
+    if (place === 'below' ? scrollsY : scrollsX) problems.push('the strip scrolls across its lines');
+
+    parent.postMessage({
+      id: id, n: n,
+      ar: video.videoWidth / video.videoHeight,   // what the engine sees (the canvas is rounded)
+      area: { w: box.right - box.left, h: box.bottom - box.top },
+      gap: parseFloat(cs.rowGap),
+      place: place,
+      lines: +focus.style.getPropertyValue('--vn-lines'),
+      tileW: tiles[0].getBoundingClientRect().width,
+      tileH: tiles[0].getBoundingClientRect().height,
+      scrolls: scrollsX || scrollsY,
+      video: { w: v.width, h: v.height },
+      problems: problems,
+    }, '*');
+  }
+
+  // The engine lays out on the frame after the metadata arrives; give it a few.
+  function settle() { afterFrames(3, report); }
+  if (video.videoWidth) settle();
+  else video.addEventListener('loadedmetadata', settle, { once: true });
+</script>
+</body>
+</html>
