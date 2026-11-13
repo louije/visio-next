@@ -1,0 +1,91 @@
+# Publishes the browser extension to Firefox Add-ons and the Chrome Web Store when
+# Scripts/release.sh pushes a vX.Y.Z tag (the app and the extension share their
+# version). To publish an existing tag again, e.g. after adding the secrets:
+#   gh workflow run publish-extension.yml -f tag=vX.Y.Z
+# The secrets are listed in web-extension/STORE.md ("Automated publishing").
+name: Publish the extension
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish, e.g. v0.6.0
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    # macOS, like the Macs the layout's browser check runs on (the image has Chrome).
+    runs-on: macos-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    defaults:
+      run:
+        working-directory: web-extension
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Check the tag matches manifest.json
+        run: |
+          version="$(node -p "require('./manifest.json').version")"
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::manifest.json is $version but the tag is $TAG"
+            exit 1
+          fi
+
+      - name: Check the store credentials are set
+        env:
+          AMO_API_KEY: ${{ secrets.AMO_API_KEY }}
+          AMO_API_SECRET: ${{ secrets.AMO_API_SECRET }}
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+          CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+        run: |
+          missing=""
+          for name in AMO_API_KEY AMO_API_SECRET CWS_CLIENT_ID CWS_CLIENT_SECRET CWS_REFRESH_TOKEN CWS_PUBLISHER_ID; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing (see web-extension/STORE.md)"
+            exit 1
+          fi
+
+      - name: Test (the layout's browser check runs in Chrome)
+        run: node --test
+
+      - name: Package
+        run: node package.mjs
+
+      # Listed: the version goes to AMO's review; don't wait for it.
+      - name: Submit to Firefox Add-ons
+        env:
+          AMO_API_KEY: ${{ secrets.AMO_API_KEY }}
+          AMO_API_SECRET: ${{ secrets.AMO_API_SECRET }}
+        run: |
+          rm -rf dist/amo
+          mkdir -p dist/amo
+          unzip -q dist/web-extension.zip -d dist/amo
+          npx --yes web-ext@10.8.0 sign --source-dir dist/amo --artifacts-dir dist/amo-artifacts \
+            --channel listed --approval-timeout 0 \
+            --api-key "$AMO_API_KEY" --api-secret "$AMO_API_SECRET"
+
+      # Uploads and submits for publishing; Google reviews it before it goes live.
+      - name: Submit to the Chrome Web Store
+        env:
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+          PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          EXTENSION_ID: fnfaiohgodmlfmgoocfiefllaibipimc   # BrowserExtension.chromeWebStoreID
+        run: npx --yes chrome-webstore-upload-cli@4.0.2 --source dist/web-extension.zip
