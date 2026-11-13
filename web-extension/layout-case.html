@@ -107,8 +107,18 @@
     if (f.left < s.right - 1 && s.left < f.right - 1 && f.top < s.bottom - 1 && s.top < f.bottom - 1) {
       problems.push('the strip overlaps the shared screen');
     }
+    // Tile 2 sits next to tile 1, one gap away: the gap the engine sized the strip with.
+    var t1 = tiles[0].getBoundingClientRect(), t2 = tiles[1].getBoundingClientRect();
+    var spacing = Math.max(t2.left - t1.right, t2.top - t1.bottom);
+    if (Math.abs(spacing - parseFloat(cs.rowGap)) > 0.5) problems.push('tiles are ' + spacing + 'px apart, not one gap');
     var scrollsX = aside.scrollWidth > aside.clientWidth + 1, scrollsY = aside.scrollHeight > aside.clientHeight + 1;
     if (place === 'below' ? scrollsY : scrollsX) problems.push('the strip scrolls across its lines');
+    if (!scrollsX && !scrollsY) {
+      var first = tiles[0].getBoundingClientRect(), last = tiles[tiles.length - 1].getBoundingClientRect();
+      var before = place === 'below' ? first.left - s.left : first.top - s.top;
+      var after = place === 'below' ? s.right - last.right : s.bottom - last.bottom;
+      if (Math.abs(before - after) > 1) problems.push('the tiles are not centred in the strip');
+    }
 
     parent.postMessage({
       id: id, n: n,
