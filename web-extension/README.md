@@ -5,14 +5,17 @@ An adaptive layout tweak for [Meet / La Suite numérique](https://visio.numeriqu
 else into a **single vertical scrolling column**. A small engine instead reads the
 shared content's real aspect ratio and lays the participants out:
 
-- **Everyone visible** — tries the strip below and beside the content, in one to
-  three lines, and keeps a layout that shows every participant at a legible size
-  (160×100 at least). Tiles first grow into the grey letterbox bars; when those
-  are too thin, the shared content shrinks (more grey bars) to make room.
+- **Everyone visible** — tries the strip below and beside the content and keeps a
+  layout that shows every participant at a legible size: 160×100 at least, or
+  128×80 when that is what lets everyone fit. Tiles first grow into the grey
+  letterbox bars; when those are too thin, the shared content shrinks (more grey
+  bars) to make room, by at most three lines. Beside a narrow window (a tall Notion
+  page) the strip may use more lines, as long as they stay in the grey band.
 - **Content as large as possible** — among the layouts that show everyone, the one
   that leaves the shared content biggest, then the one with the biggest tiles.
-- **Scroll from the start** — when even three lines can't show everyone, the strip
-  scrolls along its length, starting at the first participant.
+- **Scroll from the start** — when no layout shows everyone, the strip keeps
+  160×100 tiles in as many lines as it may take and scrolls along its length,
+  starting at the first participant.
 
 Two sources, shared by all targets:
 
@@ -49,8 +52,9 @@ Designs: `../docs/superpowers/specs/2026-09-29-global-mute-design.md`,
 
 See [`../docs/superpowers/specs/2026-11-13-layout-engine-fit-everyone-design.md`](../docs/superpowers/specs/2026-11-13-layout-engine-fit-everyone-design.md)
 (which supersedes the decision rule of `2026-07-02-meet-adaptive-layout-engine-design.md`).
-Tunables are constants in `layout-engine.js` (`minTileW` 160, `maxLines` 3,
-`maxFraction` 0.4 — how much of the area the strip may take from the content),
+Tunables are constants in `layout-engine.js` (`minTileW` 160, `squeezeTileW` 128,
+`maxLines` 3 — lines that may eat into the content, `maxFraction` 0.4 — how much of
+the area the strip may take from the content),
 overridable at runtime via `window.__vnMeet.config`.
 
 > The grid CSS is checked in headless Chromium against LiveKit's stock CSS (see
