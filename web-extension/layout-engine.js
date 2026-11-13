@@ -120,9 +120,20 @@
     return (b && b.storage && b.storage.local) ? b.storage : null;
   })();
 
+  // The focus grid's resolved gap (--lk-grid-gap is in rem); the strip inherits it.
   function gap(el) {
-    var v = parseFloat(getComputedStyle(el).getPropertyValue('--lk-grid-gap'));
-    return isFinite(v) ? v : 8;
+    var v = parseFloat(getComputedStyle(el).rowGap);
+    return isFinite(v) ? v : 0;
+  }
+
+  // The focus layout's content box: LiveKit pads it by --lk-grid-gap, and the strip
+  // and the featured tile only share what's inside.
+  function contentBox(el) {
+    var r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+    return {
+      w: r.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
+      h: r.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom),
+    };
   }
 
   function setVar(el, name, value) {
@@ -147,8 +158,8 @@
     scheduled = false;
     var focus = current;
     if (!focus || !focus.isConnected) return;
-    var rect = focus.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
+    var box = contentBox(focus);
+    if (box.w <= 0 || box.h <= 0) return;
 
     var aside = focus.querySelector(':scope > aside.lk-carousel');
     var count = aside ? aside.querySelectorAll(':scope > .lk-participant-tile').length : 0;
@@ -165,7 +176,7 @@
       ? video.videoWidth / video.videoHeight : null;
 
     apply(focus, decideLayout({
-      areaW: rect.width, areaH: rect.height, contentAR: contentAR, count: count,
+      areaW: box.w, areaH: box.h, contentAR: contentAR, count: count,
       gap: gap(focus), minTileW: CONFIG.minTileW, minTileH: CONFIG.minTileH,
       maxLines: CONFIG.maxLines, maxFraction: CONFIG.maxFraction,
     }));
