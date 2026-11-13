@@ -1,0 +1,28 @@
+# Runs the extension's tests on every push to main and every pull request that
+# touches it, on macOS like the release workflow. Its Chrome draws always-visible
+# scrollbars, as with a mouse, which a Mac with a trackpad doesn't show.
+name: Test the extension
+
+on:
+  push:
+    branches: [main]
+    paths: ['web-extension/**', '.github/workflows/test-extension.yml']
+  pull_request:
+    paths: ['web-extension/**']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: web-extension
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test (the layout's browser check runs in Chrome)
+        run: node --test
