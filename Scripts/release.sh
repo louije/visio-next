@@ -5,14 +5,18 @@
 # Usage:  Scripts/release.sh X.Y.Z
 #
 # What it does:
-#   1. Preflight: xcodegen, gh auth, Developer ID cert, create-dmg, notarytool profile.
-#   2. Bump MARKETING_VERSION (=X.Y.Z) and CURRENT_PROJECT_VERSION (+1) in project.yml.
+#   1. Preflight: xcodegen, gh auth, Developer ID cert, create-dmg, notarytool profile,
+#      and the web extension's tests (the app bundles it for Safari).
+#   2. Bump MARKETING_VERSION (=X.Y.Z) and CURRENT_PROJECT_VERSION (+1) in project.yml,
+#      and the web extension's manifest.json version (=X.Y.Z: they ship together).
 #   3. xcodebuild archive + -exportArchive with automatic Developer ID provisioning
 #      (-allowProvisioningUpdates also provisions the widget's App Group under Developer ID).
 #   4. Notarize (notarytool --wait) and staple the .app.
 #   5. Zip the stapled .app (for Sparkle updates) and build a signed + notarized DMG
 #      (the human download — robust against unzip tools that strip the ticket).
-#   6. Tag main, push, and create a GitHub Release with the DMG + zip attached.
+#   6. Tag main, push, and create a GitHub Release with the DMG + zip attached. The
+#      vX.Y.Z tag also starts .github/workflows/publish-extension.yml, which submits
+#      the extension to Firefox Add-ons and the Chrome Web Store.
 #   7. Regenerate the appcast (no deltas) on gh-pages with enclosure URLs pointing at the
 #      GitHub Release assets so Sparkle downloads are counted, then push gh-pages.
 #
@@ -46,6 +50,8 @@ security find-identity -v -p codesigning | grep -q "Developer ID Application" \
 command -v create-dmg >/dev/null || { echo "error: npm install --global create-dmg" >&2; exit 1; }
 xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1 \
   || { echo "error: notarytool profile '$NOTARY_PROFILE' missing. Run: xcrun notarytool store-credentials $NOTARY_PROFILE" >&2; exit 1; }
+(cd "$ROOT/web-extension" && node --test >/dev/null 2>&1) \
+  || { echo "error: the web extension's tests fail (cd web-extension && node --test)" >&2; exit 1; }
 
 # This keychain has several identically-named "Developer ID Application" certs, so
 # create-dmg's name-based lookup is ambiguous; resolve an explicit SHA-1 for it.
@@ -58,6 +64,10 @@ NEXT_BUILD="$((CURRENT_BUILD + 1))"
 sed -i '' "s/MARKETING_VERSION: .*/MARKETING_VERSION: \"$VERSION\"/" project.yml
 sed -i '' "s/CURRENT_PROJECT_VERSION: .*/CURRENT_PROJECT_VERSION: \"$NEXT_BUILD\"/" project.yml
 xcodegen generate >/dev/null
+MANIFEST="$ROOT/web-extension/manifest.json"
+sed -i '' -E "s/^  \"version\": \"[^\"]*\"/  \"version\": \"$VERSION\"/" "$MANIFEST"
+grep -q "^  \"version\": \"$VERSION\"" "$MANIFEST" \
+  || { echo "error: couldn't set the version in $MANIFEST" >&2; exit 1; }
 echo "Version $VERSION (build $NEXT_BUILD)"
 
 # --- Locate Sparkle's generate_appcast (resolved by the build below) -------
@@ -152,7 +162,7 @@ rm -rf "$ARCHIVE" "$EXPORT_DIR"
 # --- Tag main + GitHub Release (hosts the zip; this is the download target) -
 # Must precede the appcast push so the release asset exists when clients fetch
 # the new appcast and resolve its enclosure URLs.
-git -C "$ROOT" add App/project.yml App/Info.plist
+git -C "$ROOT" add App/project.yml App/Info.plist web-extension/manifest.json
 git -C "$ROOT" commit -m "Release $VERSION"
 git -C "$ROOT" tag "v$VERSION"
 git -C "$ROOT" push origin main "v$VERSION"
