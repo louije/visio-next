@@ -34,6 +34,8 @@ test('layout in a real browser', { skip: !BROWSER && 'no Chromium or Chrome foun
 
   for (const r of results) {
     await t.test(r.id, () => {
+      const [, w, h] = /^(\d+)x(\d+)/.exec(r.id);
+      assert.deepEqual([r.area.w, r.area.h, r.gap], [+w, +h, 8], 'the mock call has its labelled size and LiveKit gap');
       assert.deepEqual(r.problems, []);
 
       // The controller measured the content box and gap, and the CSS drew its decision.

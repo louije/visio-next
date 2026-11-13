@@ -24,7 +24,8 @@
 
   /* The page around it (Visio's reset is border-box). */
   *, *::before, *::after { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: #111; color: #fff; font: 24px system-ui; }
+  html, body { margin: 0; height: 100%; background: #111; color: #fff; }
+  body { font: 24px system-ui; }   /* not on html: rem (and so LiveKit's 0.5rem gap) stays 16px-based */
   .name { position: absolute; left: 8px; bottom: 4px; }
   .lk-participant-tile[data-lk-source=screen_share] { background: #3a3a3a; }   /* the grey bars */
 </style>
