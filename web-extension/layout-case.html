@@ -97,7 +97,7 @@
       var r = t.getBoundingClientRect();
       if (r.left < s.left - 1 || r.top < s.top - 1) problems.push('tile ' + (i + 1) + ' starts before the strip: out of reach');
       if (r.right > s.left + aside.scrollWidth + 1 || r.bottom > s.top + aside.scrollHeight + 1) problems.push('tile ' + (i + 1) + ' is past the scroll range');
-      if (r.width < 159.5 || r.height < 99.5) problems.push('tile ' + (i + 1) + ' is ' + r.width + 'x' + r.height);
+      if (r.width < 127.5 || r.height < 79.5) problems.push('tile ' + (i + 1) + ' is ' + r.width + 'x' + r.height);
     });
     [['strip', s], ['shared screen', f]].forEach(function (p) {
       var r = p[1];

@@ -20,7 +20,7 @@ function runGallery() {
   // The window fits every thumbnail: offscreen frames don't run, so wouldn't report.
   const html = execFileSync(BROWSER, [
     '--headless', '--disable-gpu', '--autoplay-policy=no-user-gesture-required',
-    '--window-size=1800,3600', '--virtual-time-budget=20000', '--dump-dom', url,
+    '--window-size=1800,4800', '--virtual-time-budget=20000', '--dump-dom', url,
   ], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'ignore'], timeout: 120000 });
   const m = /<pre id="results" data-expected="(\d+)">([^<]*)<\/pre>/.exec(html);
   assert.ok(m, 'the gallery has no results');

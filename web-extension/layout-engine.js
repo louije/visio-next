@@ -7,7 +7,7 @@
  * few hooks onto `.lk-focus-layout` that enhance.css turns into the actual grid:
  *
  *   data-vn-place = "side" | "below"
- *   --vn-lines    = 1 | 2 | 3
+ *   --vn-lines    = 1, 2, 3 (more only inside the grey band)
  *   --vn-tile-w   = <px>, --vn-tile-h = <px>
  *   --vn-strip    = <px>
  *
@@ -23,12 +23,13 @@
   /**
    * Pure layout decision. All inputs are numbers (px / ratio / count).
    *
-   * Tries the strip below and beside the content, in 1..maxLines lines, and returns
-   * the best as { place: 'below'|'side', lines, tileW, tileH, strip (px), overflow
-   * (the strip scrolls), scale (content size against untouched, 0..1), visible
-   * (tiles shown without scrolling) }. Best = everyone visible if any layout allows
-   * it, then the largest content, then the most tiles shown, the biggest tiles, the
-   * fewest lines.
+   * Tries the strip below and beside the content, in as many lines as fit its room,
+   * and returns the best as { place: 'below'|'side', lines, tileW, tileH, strip (px),
+   * overflow (the strip scrolls), scale (content size against untouched, 0..1),
+   * visible (tiles shown without scrolling) }. Best = everyone visible if any layout
+   * allows it, then the largest content, then the most tiles shown, the biggest
+   * tiles, the fewest lines. Tiles keep minTileW when that shows everyone, shrink to
+   * squeezeTileW only when that's what does, and scroll at minTileW otherwise.
    */
   function decideLayout(o) {
     var areaW = o.areaW, areaH = o.areaH;
@@ -37,13 +38,14 @@
     var maxLines = o.maxLines != null ? o.maxLines : 3;
     var maxFraction = o.maxFraction != null ? o.maxFraction : 0.4;
     var minTileW = o.minTileW != null ? o.minTileW : 160;
+    var squeezeTileW = o.squeezeTileW != null ? o.squeezeTileW : 128;
 
     var known = !!(o.contentAR && isFinite(o.contentAR) && o.contentAR > 0);
     var cAR = known ? o.contentAR : areaW / areaH;
     // The content fitted to the whole area; the grey band is what it leaves.
     var fullW = Math.min(areaW, areaH * cAR), fullH = fullW / cAR;
 
-    function candidate(place, lines) {
+    function candidate(place, lines, tileMin) {
       var below = place === 'below';
       var lineLen = below ? areaW : areaH;       // the strip's lines run along this
       var depth = below ? areaH : areaW;         // and its thickness is taken from this
@@ -54,14 +56,16 @@
       var cap = maxFraction * depth;
       function widthFor(thickness) { return (thickness - (lines - 1) * gap) / lines / across; }
 
-      // Minimum-size tiles may take up to the cap, or the whole band when it's bigger
-      // (free space is never refused). One line is always an option.
-      if (lines > 1 && widthFor(Math.max(cap, band - gap)) < minTileW) return null;
+      // Up to maxLines, minimum-size tiles may take the cap, or the whole band when
+      // it's bigger; more lines only fit inside the band (free space is never
+      // refused). One line is always an option.
+      var room = lines <= maxLines ? Math.max(cap, band - gap) : band - gap;
+      if (lines > 1 && widthFor(room) < tileMin) return null;
       var lineFit = (lineLen - (perLine - 1) * gap) / perLine / along;
-      var fits = lineFit >= minTileW;
+      var fits = lineFit >= tileMin;
       // Grow only into the band, up to the cap; never below the minimum (the content
       // shrinks instead).
-      var w = fits ? Math.min(lineFit, Math.max(minTileW, widthFor(Math.min(cap, band - gap)))) : minTileW;
+      var w = fits ? Math.min(lineFit, Math.max(tileMin, widthFor(Math.min(cap, band - gap)))) : tileMin;
       var tileW = Math.floor(w + 1e-6), tileH = Math.floor(tileW / TILE_AR + 1e-6);
 
       var strip = lines * (below ? tileH : tileW) + (lines - 1) * gap;
@@ -83,20 +87,27 @@
       return a.lines < b.lines;
     }
 
-    var fitting = [], scrolling = [];
-    ['below', 'side'].forEach(function (place) {
-      var most = null; // this place's scrolling layout with the most lines
-      for (var lines = 1; lines <= maxLines; lines++) {
-        var c = candidate(place, lines);
-        if (!c) break; // more lines take even more room
-        if (c.overflow) most = c; else fitting.push(c);
-      }
-      if (most) scrolling.push(most);
-    });
-    // Nobody fits: each place scrolls with its most lines (so the strip doesn't
-    // fall back to one line as people join), and the content picks the place.
-    var pool = fitting.length ? fitting : scrolling;
-    return pool.reduce(function (best, c) { return better(c, best) ? c : best; });
+    function choose(tileMin) {
+      var fitting = [], scrolling = [];
+      ['below', 'side'].forEach(function (place) {
+        var most = null; // this place's scrolling layout with the most lines
+        for (var lines = 1; lines <= count; lines++) {
+          var c = candidate(place, lines, tileMin);
+          if (!c) break; // more lines take even more room
+          if (c.overflow) most = c; else fitting.push(c);
+        }
+        if (most) scrolling.push(most);
+      });
+      // Nobody fits: each place scrolls with its most lines (so the strip doesn't
+      // fall back to one line as people join), and the content picks the place.
+      var pool = fitting.length ? fitting : scrolling;
+      return pool.reduce(function (best, c) { return better(c, best) ? c : best; });
+    }
+
+    var usual = choose(minTileW);
+    if (!usual.overflow || squeezeTileW >= minTileW) return usual;
+    var squeezed = choose(squeezeTileW);
+    return squeezed.overflow ? usual : squeezed;
   }
 
   // Export the pure part for the Node test; harmless in the browser.
@@ -107,7 +118,7 @@
   // ---- DOM controller (browser only) --------------------------------------
   if (typeof document === 'undefined') return;
 
-  var CONFIG = { minTileW: 160, maxLines: 3, maxFraction: 0.4 };
+  var CONFIG = { minTileW: 160, squeezeTileW: 128, maxLines: 3, maxFraction: 0.4 };
   var current = null;   // the bound .lk-focus-layout element
   var ro = null;        // ResizeObserver on it
   var scheduled = false;
@@ -182,7 +193,7 @@
 
     apply(focus, decideLayout({
       areaW: box.w, areaH: box.h, contentAR: contentAR, count: count,
-      gap: gap(focus), minTileW: CONFIG.minTileW,
+      gap: gap(focus), minTileW: CONFIG.minTileW, squeezeTileW: CONFIG.squeezeTileW,
       maxLines: CONFIG.maxLines, maxFraction: CONFIG.maxFraction,
     }));
   }

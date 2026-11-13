@@ -4,7 +4,9 @@ const assert = require('node:assert');
 const { decideLayout } = require('./layout-engine.js');
 
 const TILE_AR = 16 / 10;
-const MIN_W = 160, MIN_H = 100, GAP = 8, MAX_LINES = 3, MAX_FRACTION = 0.4;
+const GAP = 8, MAX_LINES = 3, MAX_FRACTION = 0.4;
+const MIN_W = 160, MIN_H = 100;          // the tile size we keep when it shows everyone
+const SQUEEZE_W = 128, SQUEEZE_H = 80;   // the smaller size allowed when that's what fits everyone
 
 // The content fitted to the whole area: its size, and the grey band it leaves
 // below it and beside it.
@@ -22,19 +24,36 @@ function shown(areaW, areaH, ar, d) {
   return Math.min(1, boxW / full.w, boxH / full.h);
 }
 
-// Whether `lines` lines of minimum-size tiles beside/below hold `count` people
-// within a thickness of `room`.
-function minTilesHold(place, lines, count, areaW, areaH, room) {
+// Whether `lines` lines of tiles `tileW` wide, beside/below, hold `count` people
+// within a strip thickness of `room`.
+function tilesHold(place, lines, count, areaW, areaH, room, tileW) {
+  const tileH = tileW / TILE_AR;
   const perLine = Math.ceil(count / lines);
   const lineLen = place === 'below' ? areaW : areaH;
-  const along = place === 'below' ? MIN_W : MIN_H;
-  const across = place === 'below' ? MIN_H : MIN_W;
+  const along = place === 'below' ? tileW : tileH;
+  const across = place === 'below' ? tileH : tileW;
   return perLine * along + (perLine - 1) * GAP <= lineLen &&
     lines * across + (lines - 1) * GAP <= room;
 }
 
-const LAYOUTS = [];
-for (const place of ['below', 'side']) for (let lines = 1; lines <= MAX_LINES; lines++) LAYOUTS.push([place, lines]);
+// The thickness a strip of `lines` lines may take: up to three lines may take the
+// 40% cap or the whole grey band, whichever is bigger; more lines only the band.
+function room(place, lines, areaW, areaH, full) {
+  const band = full.band[place] - GAP;
+  return lines <= MAX_LINES ? Math.max(MAX_FRACTION * (place === 'below' ? areaH : areaW), band) : band;
+}
+
+// Every (place, lines) whose tiles of `tileW` hold everyone within their room.
+function holding(count, areaW, areaH, full, tileW, roomFor = room) {
+  const found = [];
+  for (const place of ['below', 'side']) {
+    for (let lines = 1; lines <= count; lines++) {
+      if (tilesHold(place, lines, count, areaW, areaH, roomFor(place, lines, areaW, areaH, full), tileW)) found.push([place, lines]);
+    }
+  }
+  return found;
+}
+const inBand = (place, lines, areaW, areaH, full) => full.band[place] - GAP;
 
 test('the reported screenshot: a wide tab and 4 people -> one row below, content untouched', () => {
   const d = decideLayout({ areaW: 1411, areaH: 893, contentAR: 2.58, count: 4, gap: GAP });
@@ -65,6 +84,20 @@ test('an ultrawide share in a short window with 20 people -> three rows in the b
   assert.equal(shown(1280, 700, 32 / 9, d), 1);
 });
 
+test('a tall Notion window with 50 people -> five columns of smaller tiles in the band, everyone visible', () => {
+  const d = decideLayout({ areaW: 1411, areaH: 893, contentAR: 0.6, count: 50, gap: GAP });
+  assert.deepEqual([d.place, d.lines, d.overflow], ['side', 5, false]);
+  assert.deepEqual([d.tileW, d.tileH], [SQUEEZE_W, SQUEEZE_H]);
+  assert.equal(shown(1411, 893, 0.6, d), 1);
+});
+
+test('the same on a laptop with the chat open -> it scrolls, using the whole band, at the usual size', () => {
+  const d = decideLayout({ areaW: 1280, areaH: 620, contentAR: 0.6, count: 50, gap: GAP });
+  assert.deepEqual([d.place, d.overflow, d.tileW], ['side', true, MIN_W]);
+  assert.ok(d.lines > MAX_LINES, `${d.lines} columns fill the band`);
+  assert.equal(shown(1280, 620, 0.6, d), 1);
+});
+
 test('more people than fit at minimum size -> the strip scrolls, with its most lines', () => {
   const d = decideLayout({ areaW: 1411, areaH: 893, contentAR: 16 / 10, count: 50, gap: GAP });
   assert.equal(d.overflow, true);
@@ -79,10 +112,11 @@ test('an unknown content ratio is laid out as content filling the area', () => {
 });
 
 // Focus areas: the reported screenshot, a laptop with the chat panel open, a big
-// screen, a narrow window, a huge screen. Shared screens: phone, portrait window,
-// 4:3, 16:10, 16:9, 21:9, the wide tab of the screenshot, a 32:9 ultrawide.
+// screen, a narrow window, a huge screen. Shared screens: phone, a tall Notion
+// window, portrait window, 4:3, 16:10, 16:9, 21:9, the wide tab of the screenshot,
+// a 32:9 ultrawide.
 const AREAS = [[1411, 893], [1280, 620], [1880, 960], [900, 800], [2400, 1200]];
-const RATIOS = [9 / 16, 3 / 4, 4 / 3, 16 / 10, 16 / 9, 21 / 9, 2.58, 32 / 9];
+const RATIOS = [9 / 16, 0.6, 3 / 4, 4 / 3, 16 / 10, 16 / 9, 21 / 9, 2.58, 32 / 9];
 
 for (const [areaW, areaH] of AREAS) {
   for (const ar of RATIOS) {
@@ -94,34 +128,39 @@ for (const [areaW, areaH] of AREAS) {
         const at = ` (${count} people: ${JSON.stringify(d)})`;
         const below = d.place === 'below';
         const lineLen = below ? areaW : areaH;
-        const depth = below ? areaH : areaW;
         const along = below ? d.tileW : d.tileH;
         const across = below ? d.tileH : d.tileW;
-        const room = Math.max(MAX_FRACTION * depth, full.band[d.place] - GAP);
 
-        assert.ok(d.lines >= 1 && d.lines <= MAX_LINES, 'one to three lines' + at);
-        assert.ok(d.tileW >= MIN_W && d.tileH >= MIN_H, 'tiles at least the minimum' + at);
+        assert.ok(d.tileW >= SQUEEZE_W && d.tileH >= SQUEEZE_H, 'tiles at least the smaller size' + at);
         assert.ok(Math.abs(d.tileW / d.tileH - TILE_AR) < 0.02, 'tiles keep 16:10' + at);
         assert.equal(d.strip, d.lines * across + (d.lines - 1) * GAP, 'the strip is its lines' + at);
-        assert.ok(d.strip <= room + 1e-9, 'the strip stays within the cap or the band' + at);
+        assert.ok(d.strip <= room(d.place, d.lines, areaW, areaH, full) + 1e-9,
+          'the strip stays within its room (more than three lines only in the band)' + at);
 
         const perLine = Math.floor((lineLen + GAP) / (along + GAP));
         assert.equal(d.overflow, perLine * d.lines < count, 'scrolls exactly when its lines cannot hold everyone' + at);
 
-        const holding = LAYOUTS.filter(([p, l]) => minTilesHold(p, l, count, areaW, areaH,
-          Math.max(MAX_FRACTION * (p === 'below' ? areaH : areaW), full.band[p] - GAP)));
-        if (holding.length) assert.equal(d.overflow, false, 'nobody scrolls when some layout holds everyone' + at);
-        for (const [p, l] of holding) {
-          const minStrip = l * (p === 'below' ? MIN_H : MIN_W) + (l - 1) * GAP;
-          const theirs = shown(areaW, areaH, ar, { place: p, strip: minStrip });
-          assert.ok(shown(areaW, areaH, ar, d) >= theirs - 0.001,
-            `content as big as with ${l} line(s) ${p} at minimum size (${theirs.toFixed(3)})` + at);
-        }
+        const usual = holding(count, areaW, areaH, full, MIN_W);
+        const squeezed = holding(count, areaW, areaH, full, SQUEEZE_W);
+        if (squeezed.length) assert.equal(d.overflow, false, 'nobody scrolls when some layout holds everyone' + at);
+        if (usual.length) assert.ok(d.tileW >= MIN_W, 'the usual tile size when it holds everyone' + at);
+        if (d.tileW < MIN_W) assert.ok(!d.overflow && !usual.length, 'smaller tiles only when they are what fits everyone' + at);
+        if (d.overflow) assert.ok(d.tileW >= MIN_W, 'a scrolling strip keeps the usual tile size' + at);
 
-        const bandHolds = LAYOUTS.some(([p, l]) => minTilesHold(p, l, count, areaW, areaH, full.band[p] - GAP));
+        // The content is as big as with any layout that holds everyone at the size used.
+        for (const [p, l] of usual.length ? usual : squeezed) {
+          const tile = usual.length ? { w: MIN_W, h: MIN_H } : { w: SQUEEZE_W, h: SQUEEZE_H };
+          const strip = l * (p === 'below' ? tile.h : tile.w) + (l - 1) * GAP;
+          const theirs = shown(areaW, areaH, ar, { place: p, strip });
+          assert.ok(shown(areaW, areaH, ar, d) >= theirs - 0.001,
+            `content as big as with ${l} line(s) ${p} at ${tile.w}px (${theirs.toFixed(3)})` + at);
+        }
+        const bandHolds = holding(count, areaW, areaH, full, usual.length ? MIN_W : SQUEEZE_W, inBand).length > 0;
         if (bandHolds) assert.equal(shown(areaW, areaH, ar, d), 1, 'content untouched when the grey band holds everyone' + at);
 
-        if (prev) assert.ok(d.tileW <= prev.tileW, `tiles never grow with more people (were ${prev.tileW}px)` + at);
+        if (prev && prev.overflow === d.overflow) {
+          assert.ok(d.tileW <= prev.tileW, `tiles never grow with more people (were ${prev.tileW}px)` + at);
+        }
         prev = d;
       }
     });

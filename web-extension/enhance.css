@@ -5,7 +5,7 @@
  * hooks onto `.lk-focus-layout`:
  *
  *   data-vn-place = "side" | "below"     (which axis has the grey bars)
- *   --vn-lines    = 1 | 2 | 3             (columns when side / rows when below)
+ *   --vn-lines    = 1, 2, 3, more in the grey band (columns when side / rows when below)
  *   --vn-tile-w, --vn-tile-h = <px>       (tile size)
  *   --vn-strip    = <px>                  (strip thickness)
  *
@@ -15,7 +15,7 @@
  * `data-lk-orientation` are set imperatively by Meet's CarouselLayout, so they're
  * stable despite Panda's hashed classes.
  *
- * Tunables live in layout-engine.js (minTileW/maxLines/maxFraction).
+ * Tunables live in layout-engine.js (minTileW/squeezeTileW/maxLines/maxFraction).
  */
 
 :root {

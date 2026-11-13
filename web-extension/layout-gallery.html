@@ -27,10 +27,10 @@
 <pre id="results"></pre>
 <script>
   // Focus areas (the layout's content box): the reported screenshot, a laptop with
-  // the chat panel open, a narrow window, a big screen. Shared screens: phone, 4:3,
-  // 16:9, the screenshot's wide tab, a 32:9 ultrawide.
+  // the chat panel open, a narrow window, a big screen. Shared screens: phone, a
+  // tall Notion window, 4:3, 16:9, the screenshot's wide tab, a 32:9 ultrawide.
   var AREAS = [[1411, 893], [1280, 620], [900, 800], [1880, 960]];
-  var RATIOS = [[9 / 16, '9:16'], [4 / 3, '4:3'], [16 / 9, '16:9'], [2.58, '2.58:1'], [32 / 9, '32:9']];
+  var RATIOS = [[9 / 16, '9:16'], [0.6, 'Notion 0.6:1'], [4 / 3, '4:3'], [16 / 9, '16:9'], [2.58, '2.58:1'], [32 / 9, '32:9']];
   var COUNTS = [2, 4, 7, 12, 20, 50];
   var PAD = 8;   // LiveKit pads the focus layout by --lk-grid-gap
   var THUMB = 216;
