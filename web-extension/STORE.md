@@ -45,12 +45,36 @@ One-time setup, as repository secrets (`gh secret set NAME`):
 
 - `AMO_API_KEY`, `AMO_API_SECRET` — the JWT issuer and secret from
   <https://addons.mozilla.org/developers/addon/api/key/>.
-- `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN` — an OAuth client of a
-  Google Cloud project with the Chrome Web Store API enabled, and a refresh token for
-  the account that owns the item: follow
-  <https://github.com/fregante/chrome-webstore-upload-keys>.
+- `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN` — an OAuth client and a
+  refresh token for the account that owns the item (steps below). The workflow uses
+  them only in `publish-chrome.mjs`, which talks to Google directly.
 - `CWS_PUBLISHER_ID` — your developer account's id (not the extension's), in the
   Chrome Web Store Developer Dashboard's URL when logged in.
+
+### Getting the Chrome refresh token (Google only, no third-party tool)
+
+1. In <https://console.cloud.google.com>, create a project and enable the **Chrome
+   Web Store API** (APIs & Services → Library).
+2. Configure the OAuth consent screen (External, you as a test user), then **publish
+   it to production**: a refresh token from an app left in testing expires after
+   7 days. Google warns that the app is unverified when you sign in; as its owner,
+   continue anyway.
+3. Credentials → Create credentials → **OAuth client ID**, type **Desktop app**. Its
+   client ID and secret are `CWS_CLIENT_ID` and `CWS_CLIENT_SECRET`.
+4. Open, signed in as the account that owns the item (with your client ID):
+   `https://accounts.google.com/o/oauth2/v2/auth?client_id=CLIENT_ID&redirect_uri=http://127.0.0.1:8818&response_type=code&scope=https://www.googleapis.com/auth/chromewebstore&access_type=offline&prompt=consent`
+   Allow; the browser then fails to load `http://127.0.0.1:8818/?code=…`. Copy the
+   `code` value from the address bar (turn any `%2F` into `/`).
+5. In your own terminal (it prints the token), exchange it:
+
+   ```sh
+   read -r CLIENT_ID; read -rs CLIENT_SECRET; read -rs CODE
+   curl -s https://oauth2.googleapis.com/token -d grant_type=authorization_code \
+     -d client_id="$CLIENT_ID" --data-urlencode client_secret="$CLIENT_SECRET" \
+     --data-urlencode code="$CODE" -d redirect_uri=http://127.0.0.1:8818
+   ```
+
+   The `refresh_token` in the answer is `CWS_REFRESH_TOKEN`.
 
 The extension's id (`fnfaiohgodmlfmgoocfiefllaibipimc`) is written in the workflow.
 Until the secrets exist the workflow stops and names the missing ones; to publish a
