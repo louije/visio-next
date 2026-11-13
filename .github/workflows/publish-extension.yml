@@ -80,12 +80,13 @@ jobs:
             --channel listed --approval-timeout 0 \
             --api-key "$AMO_API_KEY" --api-secret "$AMO_API_SECRET"
 
-      # Uploads and submits for publishing; Google reviews it before it goes live.
+      # Our own uploader (no third-party code sees these credentials); Google reviews
+      # the version before it goes live.
       - name: Submit to the Chrome Web Store
         env:
-          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
-          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
-          PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
-          EXTENSION_ID: fnfaiohgodmlfmgoocfiefllaibipimc   # BrowserExtension.chromeWebStoreID
-        run: npx --yes chrome-webstore-upload-cli@4.0.2 --source dist/web-extension.zip
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+          CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          CWS_EXTENSION_ID: fnfaiohgodmlfmgoocfiefllaibipimc   # BrowserExtension.chromeWebStoreID
+        run: node publish-chrome.mjs dist/web-extension.zip
